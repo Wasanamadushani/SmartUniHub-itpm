@@ -1,0 +1,9 @@
+{
+  "name": "sliit-student-transport-workspace",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm --prefix react-frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "start:backend": "npm --prefix backend run start"
+  }
+}
