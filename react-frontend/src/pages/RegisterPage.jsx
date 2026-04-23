@@ -99,7 +99,7 @@ export default function RegisterPage() {
     setErrorMessage('');
 
     try {
-      const result = await apiRequest('/api/users/register', {
+      const result = await apiRequest('/users/register', {
         method: 'POST',
         body: JSON.stringify({
           name: formState.name,
