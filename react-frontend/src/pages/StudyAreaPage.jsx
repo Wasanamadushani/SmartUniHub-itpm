@@ -25,7 +25,7 @@ export default function StudyAreaPage() {
     setError('');
     try {
       const results = await apiRequest(
-        `/api/bookings/seats?date=${encodeURIComponent(date)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
+        `/bookings/seats?date=${encodeURIComponent(date)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
       );
       setSeats(results);
     } catch (err) {

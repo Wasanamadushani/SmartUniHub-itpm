@@ -14,28 +14,28 @@ export const api = axios.create({
 
 // Foods
 export const getFoods = (canteen = null) =>
-  api.get("/api/foods", { params: canteen ? { canteen } : {} });
+  api.get("/foods", { params: canteen ? { canteen } : {} });
 
-export const addFood = (payload) => api.post("/api/foods", payload);
-export const updateFood = (id, payload) => api.put(`/api/foods/${id}`, payload);
-export const deleteFood = (id) => api.delete(`/api/foods/${id}`);
+export const addFood = (payload) => api.post("/foods", payload);
+export const updateFood = (id, payload) => api.put(`/foods/${id}`, payload);
+export const deleteFood = (id) => api.delete(`/foods/${id}`);
 
 // Offers (food promotions)
 export const getOffers = (canteenOrRequestId = null) => {
   if (!canteenOrRequestId) return Promise.resolve({ data: [] });
   const isCanteen = canteenOrRequestId === "anohana" || canteenOrRequestId === "basement";
-  if (isCanteen) return api.get("/api/offers", { params: { canteen: canteenOrRequestId } });
-  return api.get(`/api/offers/${canteenOrRequestId}`);
+  if (isCanteen) return api.get("/offers", { params: { canteen: canteenOrRequestId } });
+  return api.get(`/offers/${canteenOrRequestId}`);
 };
 export const getAllOffers = (canteen = null) =>
-  api.get("/api/offers/admin", { params: canteen ? { canteen } : {} });
-export const createOffer = (payload) => api.post("/api/offers", payload);
-export const updateOffer = (id, payload) => api.put(`/api/offers/${id}`, payload);
-export const deleteOffer = (id) => api.delete(`/api/offers/${id}`);
+  api.get("/offers/admin", { params: canteen ? { canteen } : {} });
+export const createOffer = (payload) => api.post("/offers", payload);
+export const updateOffer = (id, payload) => api.put(`/offers/${id}`, payload);
+export const deleteOffer = (id) => api.delete(`/offers/${id}`);
 
 // Requests
 export const createFoodRequest = (payload) =>
-  api.post("/api/requests", {
+  api.post("/requests", {
     requesterId: payload?.requesterId,
     foodItem: payload?.foodItem || payload?.foodName || "Food item",
     quantity: payload?.quantity,
@@ -43,33 +43,33 @@ export const createFoodRequest = (payload) =>
     canteen: payload?.canteen || "",
   });
 export const getOpenRequests = (canteen) =>
-  api.get("/api/requests", { params: canteen ? { canteen } : {} });
-export const getMyRequests = (userId) => api.get(`/api/requests/my/${userId}`);
-export const getHelperRequests = (userId) => api.get(`/api/requests/helper/${userId}`);
-export const getRequestDetails = (id) => api.get(`/api/requests/${id}`);
-export const updateRequestByRequester = (id, payload) => api.put(`/api/requests/${id}`, payload);
-export const deleteRequest = (id, payload) => api.delete(`/api/requests/${id}`, { data: payload });
-export const cancelRequest = (id, payload) => api.put(`/api/requests/${id}/cancel`, payload);
-export const assignHelper = (id, payload) => api.put(`/api/requests/${id}/assign`, payload);
-export const updateRequestStatus = (id, payload) => api.put(`/api/requests/${id}/status`, payload);
-export const acceptRequestByHelper = (id, payload) => api.put(`/api/requests/${id}/accept`, payload);
-export const updateTracking = (id, payload) => api.put(`/api/requests/${id}/track`, payload);
+  api.get("/requests", { params: canteen ? { canteen } : {} });
+export const getMyRequests = (userId) => api.get(`/requests/my/${userId}`);
+export const getHelperRequests = (userId) => api.get(`/requests/helper/${userId}`);
+export const getRequestDetails = (id) => api.get(`/requests/${id}`);
+export const updateRequestByRequester = (id, payload) => api.put(`/requests/${id}`, payload);
+export const deleteRequest = (id, payload) => api.delete(`/requests/${id}`, { data: payload });
+export const cancelRequest = (id, payload) => api.put(`/requests/${id}/cancel`, payload);
+export const assignHelper = (id, payload) => api.put(`/requests/${id}/assign`, payload);
+export const updateRequestStatus = (id, payload) => api.put(`/requests/${id}/status`, payload);
+export const acceptRequestByHelper = (id, payload) => api.put(`/requests/${id}/accept`, payload);
+export const updateTracking = (id, payload) => api.put(`/requests/${id}/track`, payload);
 
 // Helper offers
-export const submitHelperOffer = (payload) => api.post("/api/requests/helper-offers", payload);
-export const getOffersByRequest = (requestId) => api.get(`/api/requests/helper-offers/${requestId}`);
+export const submitHelperOffer = (payload) => api.post("/requests/helper-offers", payload);
+export const getOffersByRequest = (requestId) => api.get(`/requests/helper-offers/${requestId}`);
 
 // Users
-export const getUsers = () => api.get("/api/users");
-export const createUser = (payload) => api.post("/api/users", payload);
-export const getHelpers = () => api.get("/api/users/helpers/active");
-export const getUserById = (userId) => api.get(`/api/users/${userId}`);
-export const updateUserProfile = (userId, payload) => api.put(`/api/users/${userId}`, payload);
+export const getUsers = () => api.get("/users");
+export const createUser = (payload) => api.post("/users", payload);
+export const getHelpers = () => api.get("/users/helpers/active");
+export const getUserById = (userId) => api.get(`/users/${userId}`);
+export const updateUserProfile = (userId, payload) => api.put(`/users/${userId}`, payload);
 
 // Payments - Cash on Delivery
 export const createPayment = async (requestId, requesterId) => {
   try {
-    const response = await api.post("/api/payments/create", { requestId, requesterId });
+    const response = await api.post("/payments/create", { requestId, requesterId });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Failed to create payment");
@@ -78,7 +78,7 @@ export const createPayment = async (requestId, requesterId) => {
 
 export const confirmCashPayment = async (paymentId, helperId) => {
   try {
-    const response = await api.post("/api/payments/confirm-cash-payment", { paymentId, helperId, helperConfirmed: true });
+    const response = await api.post("/payments/confirm-cash-payment", { paymentId, helperId, helperConfirmed: true });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Failed to confirm payment");
@@ -87,7 +87,7 @@ export const confirmCashPayment = async (paymentId, helperId) => {
 
 export const getRequestPayment = async (requestId) => {
   try {
-    const response = await api.get(`/api/payments/request/${requestId}`);
+    const response = await api.get(`/payments/request/${requestId}`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || error.message || "Failed to fetch payment");
