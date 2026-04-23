@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { apiRequest } from '../lib/api';
 import { readStoredUser } from '../lib/auth';
 
 export default function StudyAreaPage() {
+  const navigate = useNavigate();
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
@@ -163,6 +165,47 @@ export default function StudyAreaPage() {
 
       <section className="section-block">
         <div className="container">
+          {/* My Fines Button */}
+          {user && (
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => navigate('/student-fines')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                }}
+              >
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                My Fines
+                {unpaidFines.length > 0 && (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      marginLeft: '0.25rem',
+                    }}
+                  >
+                    {unpaidFines.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
           {error ? <div className="notice error">{error}</div> : null}
 
           {unpaidFines.length > 0 ? (

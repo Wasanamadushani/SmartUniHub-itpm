@@ -29,8 +29,7 @@ export default function Navbar() {
       { to: '/dashboard', label: 'Dashboard' },
       { to: '/events', label: 'Events' },
       { to: '/canteen', label: 'Canteen' },
-      { to: '/study-area', label: 'Study Area' },
-      { to: '/student-fines', label: 'My Fines' }
+      { to: '/study-area', label: 'Study Area' }
     ];
 
     if (currentUser?.role === 'driver' || currentUser?.role === 'admin') {
