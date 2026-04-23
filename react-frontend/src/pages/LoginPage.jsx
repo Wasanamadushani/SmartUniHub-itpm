@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { apiRequest } from '../lib/api';
-import { resolveDashboardPath, storeAuthenticatedUser } from '../lib/auth';
+import { storeAuthenticatedUser } from '../lib/auth';
 import { getPasswordChecks, isValidEmail } from '../lib/validation';
 
 export default function LoginPage() {
@@ -91,9 +91,12 @@ export default function LoginPage() {
 
       const userData = result.user || result;
       storeAuthenticatedUser(userData);
-      navigate(resolveDashboardPath(userData.role));
+      setErrorMessage('');
+      alert(`Welcome ${userData.name || userData.email}! You are now logged in.`);
+      // Redirect to dashboard after successful login
+      navigate('/dashboard');
     } catch (error) {
-      setErrorMessage(error.message || 'Unable to log in right now.');
+      setErrorMessage(error.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -170,14 +173,14 @@ export default function LoginPage() {
       <PageHeader
         eyebrow="Account Access"
         title="Welcome Back"
-        subtitle="Log in to access your SLIIT Transport account."
+        subtitle="Log in to access Events, Canteen, Study Area, My Fines, and Transport features."
       />
 
       <section className="section-block">
         <div className="container auth-grid">
           <div className="surface info-panel">
-            <h2>Secure access for students</h2>
-            <p>Use your registered email address to access your dashboard, messages, and ride history.</p>
+            <h2>Secure access for your account</h2>
+            <p>Students and drivers can log in here to access their dashboards, find rides, and use campus services.</p>
             <div className="callout-box subtle">
               <strong>Need help?</strong>
               <p>Use the password reset area below if you need to recover access to your account.</p>

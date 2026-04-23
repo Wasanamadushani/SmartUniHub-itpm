@@ -2,14 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clearAuthenticatedUser, readStoredUser } from '../lib/auth';
 
-const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/events', label: 'Events' },
-  { to: '/canteen', label: 'Canteen' },
-  { to: '/study-area', label: 'Study Area' },
-  { to: '/student-fines', label: 'My Fines' }
-];
-
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,11 +23,55 @@ export default function Navbar() {
 
   const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'User';
 
+  // Get navigation links based on user role
+  const getNavLinks = () => {
+    const baseLinks = [
+      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/events', label: 'Events' },
+      { to: '/canteen', label: 'Canteen' },
+      { to: '/study-area', label: 'Study Area' },
+      { to: '/student-fines', label: 'My Fines' }
+    ];
+
+    if (currentUser?.role === 'driver' || currentUser?.role === 'admin') {
+      baseLinks.push({ to: '/rider-dashboard', label: 'Find Ride' });
+    }
+
+    return baseLinks;
+  };
+
+  // Get dropdown menu items based on user role
+  const getDropdownItems = () => {
+    const items = [];
+
+    if (currentUser?.role === 'admin') {
+      items.push({ to: '/admin', label: '⚙️ Admin Overview' });
+      items.push({ to: '/admin-canteen', label: '🍳 Canteen Admin' });
+      items.push({ to: '/admin-events', label: '📋 Event Admin' });
+      items.push({ to: '/admin-study-area', label: '🏢 Study Area Admin' });
+    } else if (currentUser?.role === 'driver') {
+      items.push({ to: '/driver-dashboard', label: '🚗 Driver Dashboard' });
+      items.push({ to: '/become-driver', label: '📝 Driver Settings' });
+    } else {
+      items.push({ to: '/rider-dashboard', label: '🚗 My Rides' });
+      items.push({ to: '/become-driver', label: '📝 Become a Driver' });
+    }
+
+    items.push({ to: '/chat', label: '💬 Messages' });
+    items.push({ divider: true });
+    items.push({ action: 'logout', label: '🚪 Logout' });
+
+    return items;
+  };
+
   function handleLogout(event) {
     event.preventDefault();
     clearAuthenticatedUser();
     navigate('/login');
   }
+
+  const navLinks = getNavLinks();
+  const dropdownItems = getDropdownItems();
 
   return (
     <header className="navbar-wrap">
@@ -57,15 +93,17 @@ export default function Navbar() {
         </button>
 
         <div className={`nav-panel ${menuOpen ? 'open' : ''}`}>
-          <ul className="nav-links">
-            {navLinks.map((link) => (
-              <li key={link.to}>
-                <NavLink to={link.to} end={link.to === '/'}>
-                  {link.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+          {currentUser && (
+            <ul className="nav-links">
+              {navLinks.map((link) => (
+                <li key={link.to}>
+                  <NavLink to={link.to} end={link.to === '/dashboard'}>
+                    {link.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="nav-actions">
             {currentUser ? (
@@ -82,17 +120,33 @@ export default function Navbar() {
 
                 {accountMenuOpen ? (
                   <div className="account-dropdown">
-                    {currentUser.role === 'admin' ? <Link to="/admin">Admin Panel</Link> : null}
-                    {currentUser.role === 'admin' ? <Link to="/admin-canteen">Canteen Admin</Link> : null}
-                    {currentUser.role === 'admin' ? <Link to="/admin-events">Event Admin</Link> : null}
-                    {currentUser.role === 'driver' ? <Link to="/driver-dashboard">Dashboard</Link> : null}
-                    {currentUser.role !== 'admin' && currentUser.role !== 'driver' ? <Link to="/rider-dashboard">Dashboard</Link> : null}
-                    {currentUser.role !== 'driver' && currentUser.role !== 'admin' ? <Link to="/become-driver">Become a Driver</Link> : null}
-                    <Link to="/rider-dashboard">Find Ride</Link>
-                    <Link to="/chat">Messages</Link>
-                    <button type="button" className="dropdown-logout" onClick={handleLogout}>
-                      Logout
-                    </button>
+                    <div className="dropdown-header">
+                      <strong>{currentUser.name}</strong>
+                      <small>{currentUser.role}</small>
+                    </div>
+                    <div className="dropdown-divider" />
+                    {dropdownItems.map((item, idx) => {
+                      if (item.divider) {
+                        return <div key={idx} className="dropdown-divider" />;
+                      }
+                      if (item.action === 'logout') {
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="dropdown-item dropdown-logout"
+                            onClick={handleLogout}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      }
+                      return (
+                        <Link key={idx} to={item.to} className="dropdown-item">
+                          {item.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
