@@ -1,0 +1,8 @@
+❌ MongoDB connection error: The `uri` parameter to `openUri()` must be a string, got "undefined". Make sure the first parameter to `mongoose.connect()` or `mongoose.createConnection()` is a string.
+⚠️  Server will continue running without database connection.
+⚠️  Possible causes:
+   1. Network/Firewall blocking MongoDB Atlas (port 27017)
+   2. Your IP not whitelisted in MongoDB Atlas Network Access
+   3. SLIIT network may be blocking external database connections
+   4. Try using mobile hotspot or different network
+⚠️  Starting server without database connection

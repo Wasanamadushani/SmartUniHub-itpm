@@ -1,0 +1,20 @@
+[2m12:46:45 PM[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./pages/TransportLoginPage" from "src/App.jsx". Does the file exist?
+[2m12:46:48 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./pages/TransportLoginPage" from "src/App.jsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/src/App.jsx[39m:37:31
+[33m  52 |  import CanteenRequestPage from "./pages/CanteenRequestPage";
+  53 |  import HelperProfilePage from "./pages/HelperProfilePage";
+  54 |  import TransportLoginPage from "./pages/TransportLoginPage";
+     |                                  ^
+  55 |  import TransportDashboardPage from "./pages/TransportDashboardPage";
+  56 |  import NotFoundPage from "./pages/NotFoundPage";[39m
+      at TransformPluginContext._formatError (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 39)
+      at async TransformPluginContext.transform (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///C:/Users/omind/OneDrive/Documents/GitHub/SmartUniHub-itpm/react-frontend/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
