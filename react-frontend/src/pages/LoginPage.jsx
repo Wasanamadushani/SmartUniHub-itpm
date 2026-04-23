@@ -81,7 +81,7 @@ export default function LoginPage() {
     setErrorMessage('');
 
     try {
-      const result = await apiRequest('/api/users/login', {
+      const result = await apiRequest('/users/login', {
         method: 'POST',
         body: JSON.stringify({
           email: formState.email,
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
       const userData = result.user || result;
       storeAuthenticatedUser(userData);
-      navigate(resolveDashboardPath(userData.role));
+      navigate('/dashboard');
     } catch (error) {
       setErrorMessage(error.message || 'Unable to log in right now.');
     } finally {
@@ -111,7 +111,7 @@ export default function LoginPage() {
 
     setForgotLoading(true);
     try {
-      const result = await apiRequest('/api/users/forgot-password/security-question', {
+      const result = await apiRequest('/users/forgot-password/security-question', {
         method: 'POST',
         body: JSON.stringify({ email: forgotState.email })
       });
@@ -146,7 +146,7 @@ export default function LoginPage() {
 
     setForgotLoading(true);
     try {
-      const result = await apiRequest('/api/users/forgot-password/security-reset', {
+      const result = await apiRequest('/users/forgot-password/security-reset', {
         method: 'POST',
         body: JSON.stringify({
           email: forgotState.email,
