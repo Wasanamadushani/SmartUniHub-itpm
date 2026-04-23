@@ -9,6 +9,10 @@ const connectDB = async () => {
     console.log('🔄 Attempting to connect to MongoDB Atlas...');
     console.log('🌐 Using custom DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1');
     
+    if (!process.env.MONGO_URI || typeof process.env.MONGO_URI !== 'string') {
+      throw new Error('Missing MONGO_URI environment variable. Create backend/.env from backend/.env.example and set a valid MongoDB connection string.');
+    }
+
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,

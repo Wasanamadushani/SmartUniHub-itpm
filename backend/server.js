@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const studentRoutes = require('./routes/studentRoutes');
@@ -23,7 +24,7 @@ const canteenUserRoutes = require('./routes/canteenUserRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const seatRoutes = require('./routes/seatRoutes');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const server = http.createServer(app);
