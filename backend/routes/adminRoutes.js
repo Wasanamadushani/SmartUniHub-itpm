@@ -239,6 +239,19 @@ router.patch('/event-bookings/:id/payment-status', async (req, res) => {
     if (paymentStatus === 'approved') {
       update.ticketCode = generateTicketCode();
       update.ticketIssuedAt = new Date();
+      
+      // Generate individual tickets for each seat booked
+      const tickets = [];
+      for (let i = 1; i <= existingBooking.bookingCount; i++) {
+        const ticketNumber = `${generateTicketCode()}-${i}`;
+        tickets.push({
+          ticketNumber,
+          seatNumber: i,
+          qrCode: ticketNumber, // Can be enhanced with actual QR code data
+          issuedAt: new Date(),
+        });
+      }
+      update.tickets = tickets;
     }
 
     const booking = await EventBooking.findByIdAndUpdate(req.params.id, update, {

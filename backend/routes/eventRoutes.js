@@ -171,6 +171,7 @@ router.get('/bookings/:bookingId', async (req, res) => {
       paymentReceiptFileName: booking.paymentReceiptFileName,
       paymentReceiptUploadedAt: booking.paymentReceiptUploadedAt,
       verifiedAt: booking.verifiedAt,
+      tickets: booking.tickets || [],
       createdAt: booking.createdAt,
       updatedAt: booking.updatedAt,
     });

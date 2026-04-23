@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { readStoredUser } from '../lib/auth';
 import { isMongoObjectId, getEventBookingDetail } from '../lib/eventCommunityApi';
+import TicketDownload from '../components/TicketDownload';
 
 export default function EventPaymentSuccessPage() {
   const location = useLocation();
@@ -39,8 +40,14 @@ export default function EventPaymentSuccessPage() {
         setBooking(data);
         setError('');
       } catch (err) {
-        setError(err.message || 'Unable to load booking details');
+        const errorMessage = err.message || 'Unable to load booking details';
+        setError(errorMessage);
         console.error('Fetch booking error:', err);
+        console.error('Error details:', {
+          bookingId,
+          errorMessage,
+          fullError: err
+        });
       } finally {
         setLoading(false);
       }
@@ -117,6 +124,10 @@ export default function EventPaymentSuccessPage() {
               <strong className="successx-amount">Rs.{amountPaid.toFixed(2)}</strong>
             </div>
             <div className="successx-detail-item">
+              <label>Seats Booked</label>
+              <strong>{booking?.bookingCount || 1}</strong>
+            </div>
+            <div className="successx-detail-item">
               <label>Payment Status</label>
               <strong className={isApproved ? 'successx-text-success' : 'successx-text-warning'}>
                 {isApproved ? 'Approved' : 'Pending Verification'}
@@ -135,6 +146,17 @@ export default function EventPaymentSuccessPage() {
               </div>
             )}
           </div>
+
+          {/* Ticket Download Section - Only show when approved */}
+          {isApproved && booking?.tickets && booking.tickets.length > 0 && (
+            <div style={{ margin: '30px 0' }}>
+              <TicketDownload 
+                bookingId={bookingId} 
+                userId={userId} 
+                bookingCount={booking.bookingCount || 1}
+              />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="successx-actions">
@@ -169,9 +191,10 @@ export default function EventPaymentSuccessPage() {
                 <h4>✓ What's Next?</h4>
                 <ul>
                   <li>Your booking is confirmed and approved</li>
+                  <li>Download your tickets using the button above</li>
+                  <li>Each ticket is unique - you'll get {booking?.bookingCount || 1} separate ticket{(booking?.bookingCount || 1) > 1 ? 's' : ''}</li>
+                  <li>Bring your tickets (printed or digital) to the event</li>
                   <li>Check your email for confirmation details</li>
-                  <li>View your bookings in the dashboard</li>
-                  <li>You can now access event details and participate</li>
                 </ul>
               </>
             ) : (

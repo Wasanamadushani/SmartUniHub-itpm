@@ -93,6 +93,27 @@ const eventBookingSchema = new mongoose.Schema(
     ticketIssuedAt: {
       type: Date,
     },
+    tickets: [
+      {
+        ticketNumber: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        seatNumber: {
+          type: Number,
+          required: true,
+        },
+        qrCode: {
+          type: String,
+          trim: true,
+        },
+        issuedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

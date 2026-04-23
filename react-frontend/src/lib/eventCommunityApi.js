@@ -122,3 +122,15 @@ export const updateAdminEventBookingPaymentStatus = async (bookingId, paymentSta
     body: JSON.stringify({ paymentStatus, note }),
   });
 };
+
+export const getEventBookingTickets = async (bookingId, userId) => {
+  if (!isMongoObjectId(bookingId)) {
+    throw new Error('Invalid booking ID');
+  }
+
+  if (!isMongoObjectId(userId)) {
+    throw new Error('Invalid user ID');
+  }
+
+  return apiRequest(`/api/events/bookings/${bookingId}/tickets?userId=${encodeURIComponent(userId)}`);
+};
