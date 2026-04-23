@@ -5,9 +5,9 @@ const Driver = require('../models/Driver');
 // @route   POST /api/rides
 const createRide = async (req, res) => {
   try {
-    const { riderId, pickupLocation, dropLocation, scheduledDate, scheduledTime, passengers } = req.body;
+    const { riderId, pickupLocation, dropLocation, scheduledDate, scheduledTime, passengers, vehicleType } = req.body;
 
-    if (!riderId || !pickupLocation || !dropLocation || !scheduledDate || !scheduledTime || !passengers) {
+    if (!riderId || !pickupLocation || !dropLocation || !scheduledDate || !scheduledTime || !passengers || !vehicleType) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -18,6 +18,7 @@ const createRide = async (req, res) => {
       scheduledDate,
       scheduledTime,
       passengers,
+      vehicleType,
     });
 
     const populatedRide = await Ride.findById(ride._id)

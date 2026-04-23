@@ -30,7 +30,8 @@ export default function RiderDashboardPage() {
     drop: '',
     date: '',
     time: '',
-    passengers: '1'
+    passengers: '1',
+    vehicleType: 'bike'
   });
   const [riderRides, setRiderRides] = useState([]);
   const [loadingRides, setLoadingRides] = useState(false);
@@ -266,7 +267,7 @@ export default function RiderDashboardPage() {
       return;
     }
 
-    if (!bookForm.pickup || !bookForm.drop || !bookForm.date || !bookForm.time || !bookForm.passengers) {
+    if (!bookForm.pickup || !bookForm.drop || !bookForm.date || !bookForm.time || !bookForm.passengers || !bookForm.vehicleType) {
       setBookingError('Please fill all required booking fields.');
       return;
     }
@@ -284,12 +285,13 @@ export default function RiderDashboardPage() {
           dropLocation: bookForm.drop,
           scheduledDate: bookForm.date,
           scheduledTime: bookForm.time,
-          passengers: Number(bookForm.passengers)
+          passengers: Number(bookForm.passengers),
+          vehicleType: bookForm.vehicleType
         })
       });
 
       setBookingMessage('Ride request submitted successfully.');
-      setBookForm({ pickup: '', drop: '', date: '', time: '', passengers: '1' });
+      setBookForm({ pickup: '', drop: '', date: '', time: '', passengers: '1', vehicleType: 'bike' });
       await loadRiderRides();
       setActiveTab('bookings');
     } catch (error) {
@@ -648,6 +650,18 @@ export default function RiderDashboardPage() {
                 <option value="4">4 Passengers</option>
               </select>
             </label>
+            <label>
+              Vehicle Type
+              <select
+                value={bookForm.vehicleType}
+                onChange={(event) => setBookForm((current) => ({ ...current, vehicleType: event.target.value }))}
+              >
+                <option value="bike">Bike</option>
+                <option value="tuk">Tuk</option>
+                <option value="car">Car</option>
+                <option value="van">Van</option>
+              </select>
+            </label>
           </div>
 
           {bookingMessage ? <div className="notice success">{bookingMessage}</div> : null}
@@ -686,6 +700,7 @@ export default function RiderDashboardPage() {
                 </strong>
                 <p>{ride.scheduledDate ? new Date(ride.scheduledDate).toLocaleDateString() : 'N/A'} · {ride.scheduledTime || 'N/A'}</p>
                 <p>Passengers: {ride.passengers || 1}</p>
+                <p>Vehicle: {ride.vehicleType || 'Not selected'}</p>
                 <span className={`pill ${ride.status === 'pending' ? '' : 'success'}`}>{ride.status}</span>
               </article>
             ))}
@@ -719,6 +734,7 @@ export default function RiderDashboardPage() {
                 </strong>
                 <p>{ride.scheduledDate ? new Date(ride.scheduledDate).toLocaleDateString() : 'N/A'} · {ride.scheduledTime || 'N/A'}</p>
                 <p>Fare: Rs. {ride.fare || 0}</p>
+                <p>Vehicle: {ride.vehicleType || 'Not selected'}</p>
                 <span className={`pill ${ride.status === 'completed' ? 'success' : ''}`}>{ride.status}</span>
               </article>
             ))}

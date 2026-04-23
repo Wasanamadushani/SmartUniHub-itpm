@@ -79,6 +79,7 @@ async function seedRideData() {
       scheduledDate: today,
       scheduledTime: '10:00 AM',
       passengers: 2,
+      vehicleType: 'car',
       fare: 150,
       status: 'pending'
     });
@@ -101,6 +102,7 @@ async function seedRideData() {
       scheduledDate: today,
       scheduledTime: '11:00 AM',
       passengers: 1,
+      vehicleType: 'bike',
       fare: 300,
       status: 'accepted'
     });
@@ -123,6 +125,7 @@ async function seedRideData() {
       scheduledDate: today,
       scheduledTime: '09:00 AM',
       passengers: 3,
+      vehicleType: 'van',
       fare: 200,
       status: 'ongoing',
       startedAt: new Date(Date.now() - 10 * 60 * 1000)
