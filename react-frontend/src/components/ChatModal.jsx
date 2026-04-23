@@ -23,7 +23,7 @@ export default function ChatModal({ rideId, currentUserId, onClose }) {
     async function loadChat() {
       try {
         setLoading(true);
-        const chatData = await apiRequest(`/api/chats/ride/${rideId}`);
+        const chatData = await apiRequest(`/chats/ride/${rideId}`);
         setChat(chatData);
         setMessages(chatData.messages || []);
       } catch (error) {
@@ -44,7 +44,7 @@ export default function ChatModal({ rideId, currentUserId, onClose }) {
 
     pollIntervalRef.current = setInterval(async () => {
       try {
-        const updatedMessages = await apiRequest(`/api/chats/${chat._id}/messages`);
+        const updatedMessages = await apiRequest(`/chats/${chat._id}/messages`);
         setMessages(updatedMessages);
       } catch (error) {
         console.error('Failed to poll messages:', error);
@@ -65,7 +65,7 @@ export default function ChatModal({ rideId, currentUserId, onClose }) {
 
     setSending(true);
     try {
-      const message = await apiRequest(`/api/chats/${chat._id}/messages`, {
+      const message = await apiRequest(`/chats/${chat._id}/messages`, {
         method: 'POST',
         body: JSON.stringify({
           senderId: currentUserId,

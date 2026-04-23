@@ -114,7 +114,7 @@ export default function CreateEventPage() {
 
       // Check for overlapping events
       try {
-        const allEventsResponse = await apiRequest('/api/events?includeAll=true');
+        const allEventsResponse = await apiRequest('/events?includeAll=true');
         const allEvents = Array.isArray(allEventsResponse) ? allEventsResponse : [];
         
         const conflictingEvent = allEvents.find(event => {
@@ -146,7 +146,7 @@ export default function CreateEventPage() {
 
       console.log('Submitting event data:', eventData);
 
-      const response = await apiRequest('/api/events', {
+      const response = await apiRequest('/events', {
         method: 'POST',
         body: JSON.stringify(eventData),
       });

@@ -73,7 +73,7 @@ export default function BookEventPage() {
         setError('');
         setSuccess('');
 
-        const data = await apiRequest('/api/events?status=approved');
+        const data = await apiRequest('/events?status=approved');
         const approvedIndoorEvents = Array.isArray(data)
           ? data.filter((event) => event.status === 'approved' && event.eventType === 'indoor')
           : [];

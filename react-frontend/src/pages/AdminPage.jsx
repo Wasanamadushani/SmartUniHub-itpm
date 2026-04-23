@@ -82,10 +82,10 @@ export default function AdminPage() {
       setEventsLoading(true);
       try {
         const [pendingRes, allRes, stallsRes, bookingsRes] = await Promise.all([
-          apiRequest('/api/admin/events/pending'),
-          apiRequest('/api/admin/events'),
-          apiRequest('/api/admin/stalls'),
-          apiRequest('/api/admin/event-bookings?paymentStatus=pending_verification')
+          apiRequest('/admin/events/pending'),
+          apiRequest('/admin/events'),
+          apiRequest('/admin/stalls'),
+          apiRequest('/admin/event-bookings?paymentStatus=pending_verification')
         ]);
 
         const pendingEvents = Array.isArray(pendingRes) ? pendingRes : [];
@@ -123,7 +123,7 @@ export default function AdminPage() {
   useEffect(() => {
     async function loadDbHealth() {
       try {
-        const data = await apiRequest('/api/admin/db-health');
+        const data = await apiRequest('/admin/db-health');
         setDbHealth(data);
       } catch (err) {
         console.error('Error loading DB health:', err);
@@ -161,20 +161,20 @@ export default function AdminPage() {
       setTransportLoading(true);
       try {
         // Load active rides
-        const ridesResponse = await apiRequest('/api/rides?status=ongoing,accepted');
+        const ridesResponse = await apiRequest('/rides?status=ongoing,accepted');
         const rides = Array.isArray(ridesResponse) ? ridesResponse : [];
         
         // Load pending requests
-        const pendingResponse = await apiRequest('/api/rides?status=pending');
+        const pendingResponse = await apiRequest('/rides?status=pending');
         const pending = Array.isArray(pendingResponse) ? pendingResponse : [];
         
         // Load drivers
-        const driversResponse = await apiRequest('/api/drivers?isApproved=true');
+        const driversResponse = await apiRequest('/drivers?isApproved=true');
         const drivers = Array.isArray(driversResponse) ? driversResponse : [];
         
         // Calculate metrics
-        const completedToday = await apiRequest('/api/rides/stats/completed-today').catch(() => ({ count: 0 }));
-        const revenueToday = await apiRequest('/api/rides/stats/revenue-today').catch(() => ({ total: 0 }));
+        const completedToday = await apiRequest('/rides/stats/completed-today').catch(() => ({ count: 0 }));
+        const revenueToday = await apiRequest('/rides/stats/revenue-today').catch(() => ({ total: 0 }));
         
         setTransportData({
           activeRides: rides.slice(0, 10),
@@ -191,10 +191,10 @@ export default function AdminPage() {
         });
         
         // Load all users and drivers for management
-        const usersResponse = await apiRequest('/api/users');
+        const usersResponse = await apiRequest('/users');
         setAllUsers(Array.isArray(usersResponse) ? usersResponse : []);
         
-        const allDriversResponse = await apiRequest('/api/drivers');
+        const allDriversResponse = await apiRequest('/drivers');
         setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
       } catch (err) {
         console.error('Error loading transport data:', err);
@@ -212,15 +212,15 @@ export default function AdminPage() {
     setStudyAreaLoading(true);
     try {
       // Load seats
-      const seatsResponse = await apiRequest('/api/seats');
+      const seatsResponse = await apiRequest('/seats');
       const seats = Array.isArray(seatsResponse) ? seatsResponse : [];
       
       // Load seat bookings
-      const bookingsResponse = await apiRequest('/api/bookings?status=booked');
+      const bookingsResponse = await apiRequest('/bookings?status=booked');
       const bookings = Array.isArray(bookingsResponse) ? bookingsResponse : [];
       
       // Load fines
-      const finesResponse = await apiRequest('/api/fines');
+      const finesResponse = await apiRequest('/fines');
       const fines = Array.isArray(finesResponse) ? finesResponse : [];
       
       // Calculate metrics
@@ -315,7 +315,7 @@ export default function AdminPage() {
     if (!tableId || !seatNumber) return;
     
     try {
-      await apiRequest('/api/seats', {
+      await apiRequest('/seats', {
         method: 'POST',
         body: JSON.stringify({ tableId: Number(tableId), seatNumber: Number(seatNumber) })
       });
@@ -342,7 +342,7 @@ export default function AdminPage() {
     
     const seatIdTarget = `T${tableId}-S${seatNumber}`;
     try {
-      const allSeatsRes = await apiRequest('/api/seats');
+      const allSeatsRes = await apiRequest('/seats');
       const seatsArray = Array.isArray(allSeatsRes) ? allSeatsRes : [];
       const targetSeat = seatsArray.find(s => s.seatId === seatIdTarget);
       
@@ -351,7 +351,7 @@ export default function AdminPage() {
          return;
       }
 
-      await apiRequest(`/api/seats/${targetSeat._id}`, {
+      await apiRequest(`/seats/${targetSeat._id}`, {
         method: 'DELETE'
       });
       addNotification(`🗑️ Seat ${seatIdTarget} removed completely`, 'success');
@@ -382,7 +382,7 @@ export default function AdminPage() {
     }
 
     try {
-      await apiRequest(`/api/seats/${seat._id}`, {
+      await apiRequest(`/seats/${seat._id}`, {
         method: 'PUT',
         body: JSON.stringify({ tableId: Number(newTableId), seatNumber: Number(newSeatNumber) })
       });
@@ -400,7 +400,7 @@ export default function AdminPage() {
       const confirmPay = window.confirm(`${details}\n\nDo you want to manually mark this fine as PAID?`);
       if (confirmPay) {
         try {
-          await apiRequest(`/api/fines/pay/${fine._id}`, {
+          await apiRequest(`/fines/pay/${fine._id}`, {
             method: 'PUT'
           });
           addNotification(`✅ Fine for ${fine.user?.name || 'student'} marked as paid.`, 'success');
@@ -416,15 +416,15 @@ export default function AdminPage() {
 
   async function handleApprove(eventId) {
     try {
-      await apiRequest(`/api/admin/events/${eventId}/approve`, {
+      await apiRequest(`/admin/events/${eventId}/approve`, {
         method: 'POST',
       });
       addNotification('✅ Event approved successfully', 'success');
       // Refresh data
-      const data = await apiRequest('/api/admin/events/pending');
+      const data = await apiRequest('/admin/events/pending');
       setPendingEvents(data);
       // Also refresh eventsData
-      const allRes = await apiRequest('/api/admin/events');
+      const allRes = await apiRequest('/admin/events');
       setEventsData(prev => ({ 
         ...prev, 
         pendingEvents: data, 
@@ -438,15 +438,15 @@ export default function AdminPage() {
 
   async function handleReject(eventId) {
     try {
-      await apiRequest(`/api/admin/events/${eventId}/reject`, {
+      await apiRequest(`/admin/events/${eventId}/reject`, {
         method: 'POST',
       });
       addNotification('⚠️ Event rejected', 'info');
       // Refresh data
-      const data = await apiRequest('/api/admin/events/pending');
+      const data = await apiRequest('/admin/events/pending');
       setPendingEvents(data);
       // Also refresh eventsData
-      const allRes = await apiRequest('/api/admin/events');
+      const allRes = await apiRequest('/admin/events');
       setEventsData(prev => ({ 
         ...prev, 
         pendingEvents: data, 
@@ -460,13 +460,13 @@ export default function AdminPage() {
 
   async function handleStallStatus(stallId, status) {
     try {
-      await apiRequest(`/api/admin/stalls/${stallId}/status`, {
+      await apiRequest(`/admin/stalls/${stallId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       });
       addNotification(`✅ Stall ${status} successfully`, 'success');
       // Refresh stalls
-      const stallsRes = await apiRequest('/api/admin/stalls');
+      const stallsRes = await apiRequest('/admin/stalls');
       setEventsData(prev => ({ 
         ...prev, 
         stalls: Array.isArray(stallsRes) ? stallsRes : prev.stalls 
@@ -480,13 +480,13 @@ export default function AdminPage() {
   async function handleVerifyPayment(bookingId, paymentStatus) {
     const note = prompt('Enter a verification note (optional):');
     try {
-      await apiRequest(`/api/admin/event-bookings/${bookingId}/payment-status`, {
+      await apiRequest(`/admin/event-bookings/${bookingId}/payment-status`, {
         method: 'PATCH',
         body: JSON.stringify({ paymentStatus, note })
       });
       addNotification(`✅ Payment ${paymentStatus} successfully`, 'success');
       // Refresh bookings
-      const bookingsRes = await apiRequest('/api/admin/event-bookings?paymentStatus=pending_verification');
+      const bookingsRes = await apiRequest('/admin/event-bookings?paymentStatus=pending_verification');
       setEventsData(prev => ({ 
         ...prev, 
         bookings: Array.isArray(bookingsRes) ? bookingsRes : prev.bookings 
@@ -499,13 +499,13 @@ export default function AdminPage() {
 
   async function handleUpdateEventStatus(eventId, status) {
     try {
-      await apiRequest(`/api/admin/events/${eventId}/status`, {
+      await apiRequest(`/admin/events/${eventId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status })
       });
       addNotification(`✅ Event status updated to ${status}`, 'success');
       // Refresh all events
-      const allRes = await apiRequest('/api/admin/events');
+      const allRes = await apiRequest('/admin/events');
       setEventsData(prev => ({ 
         ...prev, 
         allEvents: Array.isArray(allRes) ? allRes : prev.allEvents 
@@ -519,14 +519,14 @@ export default function AdminPage() {
   async function handleDeleteEvent(eventId) {
     if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
     try {
-      await apiRequest(`/api/admin/events/${eventId}`, {
+      await apiRequest(`/admin/events/${eventId}`, {
         method: 'DELETE'
       });
       addNotification('🗑️ Event deleted successfully', 'success');
       // Refresh events
       const [pendingRes, allRes] = await Promise.all([
-        apiRequest('/api/admin/events/pending'),
-        apiRequest('/api/admin/events')
+        apiRequest('/admin/events/pending'),
+        apiRequest('/admin/events')
       ]);
       setPendingEvents(pendingRes);
       setEventsData(prev => ({ 
@@ -543,12 +543,12 @@ export default function AdminPage() {
   async function handleDeleteStall(stallId) {
     if (!window.confirm('Are you sure you want to delete this stall request?')) return;
     try {
-      await apiRequest(`/api/admin/stalls/${stallId}`, {
+      await apiRequest(`/admin/stalls/${stallId}`, {
         method: 'DELETE'
       });
       addNotification('🗑️ Stall deleted successfully', 'success');
       // Refresh stalls
-      const stallsRes = await apiRequest('/api/admin/stalls');
+      const stallsRes = await apiRequest('/admin/stalls');
       setEventsData(prev => ({ 
         ...prev, 
         stalls: Array.isArray(stallsRes) ? stallsRes : prev.stalls 

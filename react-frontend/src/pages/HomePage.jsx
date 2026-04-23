@@ -81,7 +81,7 @@ export default function HomePage() {
             </p>
             <div className="hero-actions">
               <Link to="/register" className="button button-primary">Get Started Free</Link>
-              <Link to="/events" className="button button-secondary">Explore Events</Link>
+              <Link to="/rider-dashboard" className="button button-secondary">Book a Ride</Link>
             </div>
 
             <div className="hero-pill">
@@ -291,6 +291,9 @@ export default function HomePage() {
                 </Link>
                 <Link to="/login" className="button button-secondary" style={{ minWidth: '180px' }}>
                   Sign In
+                </Link>
+                <Link to="/rider-dashboard" className="button button-secondary" style={{ minWidth: '180px' }}>
+                  Book a Ride
                 </Link>
               </div>
               <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--muted)' }}>

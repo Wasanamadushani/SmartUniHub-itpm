@@ -81,7 +81,7 @@ export default function EventPaymentPage() {
         const summaryPromise = getEventBookingSummary(eventId, userId);
         const eventPromise = selectedEvent && selectedEvent._id === eventId
           ? Promise.resolve(selectedEvent)
-          : apiRequest(`/api/events/${eventId}`);
+          : apiRequest(`/events/${eventId}`);
 
         const [summaryData, eventData] = await Promise.all([summaryPromise, eventPromise]);
         setSummary(summaryData || EMPTY_SUMMARY);

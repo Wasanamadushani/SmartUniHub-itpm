@@ -20,7 +20,7 @@ export default function EventDetailsPage() {
         setIsLoading(true);
         setError('');
         setCommunityError('');
-        const data = await apiRequest(`/api/events/${id}`);
+        const data = await apiRequest(`/events/${id}`);
         if (!isMounted) return;
         setEvent(data);
 

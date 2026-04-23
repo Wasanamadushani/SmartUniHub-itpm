@@ -60,7 +60,7 @@ export default function EventMemoriesPage() {
     setIsLoading(true);
     setError('');
     try {
-      const data = await apiRequest('/api/events?includeAll=true');
+      const data = await apiRequest('/events?includeAll=true');
       const nextEvents = Array.isArray(data)
         ? data.filter((event) => ['approved', 'completed'].includes(event.status))
         : [];

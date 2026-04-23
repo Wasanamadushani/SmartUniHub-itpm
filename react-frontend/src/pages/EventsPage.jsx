@@ -53,7 +53,7 @@ export default function EventsPage() {
   useEffect(() => {
     async function loadEvents() {
       try {
-        const data = await apiRequest('/api/events');
+        const data = await apiRequest('/events');
         setEvents(data);
       } catch (err) {
         setError(err.message);

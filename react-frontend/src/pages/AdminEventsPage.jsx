@@ -65,7 +65,7 @@ export default function AdminEventsPage() {
       setIsLoading(true);
       setError('');
       const query = statusFilter === 'all' ? '' : `?status=${statusFilter}`;
-      const data = await apiRequest(`/api/admin/events${query}`);
+      const data = await apiRequest(`/admin/events${query}`);
       setEvents(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Failed to load events');
@@ -117,7 +117,7 @@ export default function AdminEventsPage() {
 
   const changeStatus = async (eventId, status) => {
     try {
-      await apiRequest(`/api/admin/events/${eventId}/status`, {
+      await apiRequest(`/admin/events/${eventId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       });
@@ -131,7 +131,7 @@ export default function AdminEventsPage() {
     if (!window.confirm('Delete this event permanently?')) return;
 
     try {
-      await apiRequest(`/api/admin/events/${eventId}`, {
+      await apiRequest(`/admin/events/${eventId}`, {
         method: 'DELETE',
       });
       await loadEvents();

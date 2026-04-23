@@ -21,7 +21,7 @@ export default function StudentFinesPage() {
     try {
       setLoading(true);
       const userId = user._id || user.id;
-      const results = await apiRequest(`/api/fines/user/${userId}`);
+      const results = await apiRequest(`/fines/user/${userId}`);
       setFines(results);
     } catch (err) {
       setError(err.message || 'Failed to load fines');
