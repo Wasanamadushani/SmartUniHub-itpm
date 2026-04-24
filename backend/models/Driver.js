@@ -10,26 +10,26 @@ const driverSchema = new mongoose.Schema(
     vehicleType: {
       type: String,
       enum: ['Sedan', 'Hatchback', 'SUV', 'Van', 'Motorbike', 'Tuk-Tuk'],
-      required: [true, 'Vehicle type is required'],
+      default: 'Sedan',
     },
     vehicleNumber: {
       type: String,
-      required: [true, 'Vehicle number is required'],
-      unique: true,
+      default: 'PENDING',
       trim: true,
     },
     vehicleModel: {
       type: String,
+      default: 'To be updated',
       trim: true,
     },
     licenseNumber: {
       type: String,
-      required: [true, 'License number is required'],
+      default: 'PENDING',
       trim: true,
     },
     capacity: {
       type: Number,
-      required: true,
+      default: 4,
       min: 1,
       max: 15,
     },

@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Driver = require('../models/Driver');
 const mongoose = require('mongoose');
 
 const normalizeAnswer = (value = '') => value.trim().toLowerCase();
@@ -51,7 +52,13 @@ const registerUser = async (req, res) => {
       phone,
       role,
       securityQuestion,
-      securityAnswer
+      securityAnswer,
+      // Driver-specific fields (optional during registration)
+      vehicleType,
+      vehicleNumber,
+      vehicleModel,
+      licenseNumber,
+      capacity
     } = req.body;
 
     const normalizedName = normalizeText(name);
@@ -90,6 +97,25 @@ const registerUser = async (req, res) => {
       securityAnswer: normalizedSecurityAnswer,
       role: role || 'rider',
     });
+
+    // If user registered as driver, create a basic driver profile automatically
+    if (role === 'driver') {
+      try {
+        await Driver.create({
+          user: user._id,
+          vehicleType: vehicleType || 'Sedan',
+          vehicleNumber: vehicleNumber || 'PENDING',
+          vehicleModel: vehicleModel || 'To be updated',
+          licenseNumber: licenseNumber || 'PENDING',
+          capacity: capacity || 4,
+          isApproved: false, // Requires admin approval
+          isAvailable: false
+        });
+      } catch (driverError) {
+        // If driver profile creation fails, still return success for user creation
+        console.error('Failed to create driver profile:', driverError);
+      }
+    }
 
     res.status(201).json({
       _id: user._id,

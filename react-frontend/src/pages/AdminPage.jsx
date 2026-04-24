@@ -540,6 +540,86 @@ export default function AdminPage() {
     }
   }
 
+  async function handleAssignDriver(rideId) {
+    // Get list of available drivers
+    try {
+      const drivers = await apiRequest('/drivers?isApproved=true&isAvailable=true');
+      
+      if (!drivers || drivers.length === 0) {
+        addNotification('❌ No available drivers found', 'warning');
+        return;
+      }
+
+      // Create a simple prompt with driver names
+      const driverList = drivers.map((d, idx) => `${idx + 1}. ${d.user?.name || 'Driver'} - ${d.vehicleModel || 'Vehicle'} (${d.vehicleNumber || 'N/A'})`).join('\n');
+      const selection = prompt(`Select a driver by number:\n\n${driverList}`);
+      
+      if (!selection) return;
+      
+      const driverIndex = parseInt(selection) - 1;
+      if (isNaN(driverIndex) || driverIndex < 0 || driverIndex >= drivers.length) {
+        addNotification('❌ Invalid driver selection', 'warning');
+        return;
+      }
+
+      const selectedDriver = drivers[driverIndex];
+      const fare = prompt('Enter fare amount (Rs.):');
+      
+      if (!fare || isNaN(fare) || parseFloat(fare) <= 0) {
+        addNotification('❌ Invalid fare amount', 'warning');
+        return;
+      }
+
+      // Assign driver to ride
+      await apiRequest(`/rides/${rideId}/accept`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          driverId: selectedDriver._id,
+          fare: parseFloat(fare)
+        })
+      });
+
+      addNotification('✅ Driver assigned successfully', 'success');
+      
+      // Refresh transport data
+      const pendingResponse = await apiRequest('/rides?status=pending');
+      const pending = Array.isArray(pendingResponse) ? pendingResponse : [];
+      setTransportData(prev => ({
+        ...prev,
+        pendingRequests: pending.slice(0, 10)
+      }));
+    } catch (err) {
+      console.error('Error assigning driver:', err);
+      addNotification(`❌ Error assigning driver: ${err.message}`, 'warning');
+    }
+  }
+
+  async function handleCancelRide(rideId) {
+    if (!window.confirm('Are you sure you want to cancel this ride request?')) return;
+    
+    const reason = prompt('Enter cancellation reason (optional):');
+    
+    try {
+      await apiRequest(`/rides/${rideId}/cancel`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason: reason || 'Cancelled by admin' })
+      });
+
+      addNotification('✅ Ride cancelled successfully', 'success');
+      
+      // Refresh transport data
+      const pendingResponse = await apiRequest('/rides?status=pending');
+      const pending = Array.isArray(pendingResponse) ? pendingResponse : [];
+      setTransportData(prev => ({
+        ...prev,
+        pendingRequests: pending.slice(0, 10)
+      }));
+    } catch (err) {
+      console.error('Error cancelling ride:', err);
+      addNotification(`❌ Error cancelling ride: ${err.message}`, 'warning');
+    }
+  }
+
   async function handleDeleteStall(stallId) {
     if (!window.confirm('Are you sure you want to delete this stall request?')) return;
     try {
@@ -712,10 +792,18 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
-                      <button type="button" className="button button-primary button-small">
+                      <button 
+                        type="button" 
+                        className="button button-primary button-small"
+                        onClick={() => handleAssignDriver(request._id)}
+                      >
                         Assign Driver
                       </button>
-                      <button type="button" className="button button-secondary button-small">
+                      <button 
+                        type="button" 
+                        className="button button-secondary button-small"
+                        onClick={() => handleCancelRide(request._id)}
+                      >
                         Cancel
                       </button>
                     </div>
