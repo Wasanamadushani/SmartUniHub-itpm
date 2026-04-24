@@ -297,11 +297,119 @@ const rateRide = async (req, res) => {
 // @route   GET /api/rides/pending
 const getPendingRides = async (req, res) => {
   try {
-    const rides = await Ride.find({ status: 'pending' })
+    const rides = await Ride.find({ status: { $in: ['pending', 'quoted'] } })
       .populate('rider', '-password')
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: '-password' }
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json(rides);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Send price quote (driver)
+// @route   PATCH /api/rides/:id/send-quote
+const sendQuote = async (req, res) => {
+  try {
+    const { driverId, quotedFare } = req.body;
+
+    if (!quotedFare || quotedFare <= 0) {
+      return res.status(400).json({ message: 'Valid fare amount is required' });
+    }
+
+    const ride = await Ride.findById(req.params.id);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.status !== 'pending') {
+      return res.status(400).json({ message: 'Ride is no longer available for quotes' });
+    }
+
+    ride.driver = driverId;
+    ride.quotedFare = quotedFare;
+    ride.quoteStatus = 'sent';
+    ride.status = 'quoted';
+    ride.quoteSentAt = new Date();
+    await ride.save();
+
+    const populatedRide = await Ride.findById(ride._id)
+      .populate('rider', '-password')
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: '-password' }
+      });
+
+    res.status(200).json(populatedRide);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Accept price quote (rider)
+// @route   PATCH /api/rides/:id/accept-quote
+const acceptQuote = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.status !== 'quoted' || ride.quoteStatus !== 'sent') {
+      return res.status(400).json({ message: 'No quote available to accept' });
+    }
+
+    ride.quoteStatus = 'accepted';
+    ride.status = 'accepted';
+    ride.fare = ride.quotedFare;
+    ride.quoteRespondedAt = new Date();
+    await ride.save();
+
+    const populatedRide = await Ride.findById(ride._id)
+      .populate('rider', '-password')
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: '-password' }
+      });
+
+    res.status(200).json(populatedRide);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reject price quote (rider)
+// @route   PATCH /api/rides/:id/reject-quote
+const rejectQuote = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.status !== 'quoted' || ride.quoteStatus !== 'sent') {
+      return res.status(400).json({ message: 'No quote available to reject' });
+    }
+
+    ride.quoteStatus = 'rejected';
+    ride.status = 'pending';
+    ride.driver = null;
+    ride.quotedFare = 0;
+    ride.quoteRespondedAt = new Date();
+    await ride.save();
+
+    const populatedRide = await Ride.findById(ride._id)
+      .populate('rider', '-password')
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: '-password' }
+      });
+
+    res.status(200).json(populatedRide);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -333,5 +441,8 @@ module.exports = {
   cancelRide,
   rateRide,
   getPendingRides,
+  sendQuote,
+  acceptQuote,
+  rejectQuote,
   deleteRide,
 };

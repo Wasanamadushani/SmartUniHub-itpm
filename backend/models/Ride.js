@@ -37,12 +37,27 @@ const rideSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'ongoing', 'completed', 'cancelled'],
+      enum: ['pending', 'quoted', 'accepted', 'ongoing', 'completed', 'cancelled'],
       default: 'pending',
     },
     fare: {
       type: Number,
       default: 0,
+    },
+    quotedFare: {
+      type: Number,
+      default: 0,
+    },
+    quoteStatus: {
+      type: String,
+      enum: ['none', 'sent', 'accepted', 'rejected'],
+      default: 'none',
+    },
+    quoteSentAt: {
+      type: Date,
+    },
+    quoteRespondedAt: {
+      type: Date,
     },
     distance: {
       type: Number, // in km
@@ -56,6 +71,11 @@ const rideSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'paid', 'refunded'],
       default: 'pending',
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'card'],
+      default: 'cash',
     },
     riderRating: {
       type: Number,

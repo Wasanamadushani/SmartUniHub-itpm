@@ -918,9 +918,48 @@ export default function AdminPage() {
                       }}>
                         {driver.isApproved ? '✅ Approved' : '⏳ Pending'}
                       </span>
-                      <button type="button" className="button button-secondary button-small">
-                        {driver.isApproved ? 'Suspend' : 'Approve'}
-                      </button>
+                      {!driver.isApproved ? (
+                        <button 
+                          type="button" 
+                          className="button button-primary button-small"
+                          onClick={async () => {
+                            try {
+                              await apiRequest(`/drivers/${driver._id}/approve`, {
+                                method: 'PATCH'
+                              });
+                              addNotification(`✅ Driver ${driver.user?.name || 'driver'} approved successfully`, 'success');
+                              // Refresh drivers
+                              const allDriversResponse = await apiRequest('/drivers');
+                              setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                            } catch (err) {
+                              addNotification(`❌ Error approving driver: ${err.message}`, 'warning');
+                            }
+                          }}
+                        >
+                          Approve
+                        </button>
+                      ) : (
+                        <button 
+                          type="button" 
+                          className="button button-secondary button-small"
+                          onClick={async () => {
+                            if (!window.confirm('Are you sure you want to suspend this driver?')) return;
+                            try {
+                              await apiRequest(`/drivers/${driver._id}/reject`, {
+                                method: 'PATCH'
+                              });
+                              addNotification(`⚠️ Driver ${driver.user?.name || 'driver'} suspended`, 'info');
+                              // Refresh drivers
+                              const allDriversResponse = await apiRequest('/drivers');
+                              setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                            } catch (err) {
+                              addNotification(`❌ Error suspending driver: ${err.message}`, 'warning');
+                            }
+                          }}
+                        >
+                          Suspend
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

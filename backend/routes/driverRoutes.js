@@ -9,6 +9,7 @@ const {
   updateAvailability,
   updateLocation,
   approveDriver,
+  rejectDriver,
   deleteDriver,
   getDriverStats,
 } = require('../controllers/driverController');
@@ -19,6 +20,7 @@ router.get('/:id/stats', getDriverStats);
 router.patch('/:id/availability', updateAvailability);
 router.patch('/:id/location', updateLocation);
 router.patch('/:id/approve', approveDriver);
+router.patch('/:id/reject', rejectDriver);
 router.route('/:id').get(getDriverById).put(updateDriver).delete(deleteDriver);
 
 module.exports = router;

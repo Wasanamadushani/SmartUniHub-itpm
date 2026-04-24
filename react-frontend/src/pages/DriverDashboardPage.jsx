@@ -31,6 +31,8 @@ export default function DriverDashboardPage() {
   const [historyError, setHistoryError] = useState('');
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [acceptingRideId, setAcceptingRideId] = useState('');
+  const [sendingQuoteId, setSendingQuoteId] = useState('');
+  const [quoteAmounts, setQuoteAmounts] = useState({});
   const [requestError, setRequestError] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [showChatModal, setShowChatModal] = useState(false);
@@ -252,7 +254,19 @@ export default function DriverDashboardPage() {
 
     try {
       const rides = await apiRequest('/rides/pending');
-      setPendingRides(Array.isArray(rides) ? rides : []);
+      const ridesArray = Array.isArray(rides) ? rides : [];
+      
+      // Only show rides if driver is approved
+      // Filter out rides that already have quotes from other drivers
+      if (driverProfile && driverProfile.isApproved) {
+        const availableRides = ridesArray.filter(ride => 
+          ride.status === 'pending' || 
+          (ride.status === 'quoted' && ride.driver?._id === driverProfile._id)
+        );
+        setPendingRides(availableRides);
+      } else {
+        setPendingRides([]);
+      }
     } catch (error) {
       setRequestError(error.message || 'Unable to load ride requests right now.');
     } finally {
@@ -373,6 +387,46 @@ export default function DriverDashboardPage() {
       setRequestError(error.message || 'Unable to accept this ride request.');
     } finally {
       setAcceptingRideId('');
+    }
+  }
+
+  async function handleSendQuote(rideId) {
+    const driverId = await ensureDriverId();
+    if (!driverId) {
+      setRequestError('Driver profile not found. Please complete driver registration first.');
+      return;
+    }
+
+    const quotedFare = quoteAmounts[rideId];
+    if (!quotedFare || quotedFare <= 0) {
+      setRequestError('Please enter a valid fare amount.');
+      return;
+    }
+
+    setRequestMessage('');
+    setRequestError('');
+    setSendingQuoteId(rideId);
+
+    try {
+      await apiRequest(`/rides/${rideId}/send-quote`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          driverId,
+          quotedFare: Number(quotedFare)
+        })
+      });
+
+      setPendingRides((current) => current.filter((ride) => ride._id !== rideId));
+      setRequestMessage('Price quote sent successfully. Waiting for rider to accept.');
+      setQuoteAmounts((current) => {
+        const updated = { ...current };
+        delete updated[rideId];
+        return updated;
+      });
+    } catch (error) {
+      setRequestError(error.message || 'Unable to send quote.');
+    } finally {
+      setSendingQuoteId('');
     }
   }
 
@@ -895,7 +949,44 @@ export default function DriverDashboardPage() {
           {requestError ? <div className="notice error">{requestError}</div> : null}
 
           {!driverProfile ? (
-            <div className="notice error">No driver profile found for this account. Complete driver registration to accept rides.</div>
+            <div className="notice error" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1rem',
+              alignItems: 'flex-start'
+            }}>
+              <div>
+                <strong>⚠️ No driver profile found for this account.</strong>
+                <p style={{ margin: '0.5rem 0 0 0' }}>
+                  Complete driver registration to accept rides and start earning.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => navigate('/become-driver')}
+                style={{ marginTop: '0.5rem' }}
+              >
+                Complete Driver Registration →
+              </button>
+            </div>
+          ) : driverProfile && !driverProfile.isApproved ? (
+            <div className="notice" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1rem',
+              alignItems: 'flex-start',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '2px solid rgba(245, 158, 11, 0.3)',
+              color: '#92400e'
+            }}>
+              <div>
+                <strong>⏳ Your driver account is pending approval.</strong>
+                <p style={{ margin: '0.5rem 0 0 0' }}>
+                  An admin will review your registration and approve your account soon. You will be able to accept ride requests once approved.
+                </p>
+              </div>
+            </div>
           ) : null}
 
           {loadingRequests ? <p>Loading ride requests...</p> : null}
@@ -915,14 +1006,44 @@ export default function DriverDashboardPage() {
                 </strong>
                 <p>{ride.scheduledTime || 'N/A'} · {ride.passengers || 1} passenger(s)</p>
                 <p>Rider: {ride.rider?.name || 'Student'}</p>
-                <button
-                  type="button"
-                  className="button button-primary button-small"
-                  onClick={() => handleAcceptRequest(ride._id)}
-                  disabled={!driverProfile || acceptingRideId === ride._id}
-                >
-                  {acceptingRideId === ride._id ? 'Accepting...' : 'Accept Request'}
-                </button>
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0', fontWeight: '600' }}>
+                  💳 Payment: {ride.paymentMethod === 'cash' ? '💵 Cash on Delivery' : '💳 Card Payment'}
+                </p>
+                
+                {/* Price Quote Input */}
+                <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
+                    💰 Your Price Quote (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10"
+                    placeholder="Enter fare amount"
+                    value={quoteAmounts[ride._id] || ''}
+                    onChange={(e) => setQuoteAmounts((current) => ({ ...current, [ride._id]: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                      fontSize: '1rem',
+                      marginBottom: '0.75rem'
+                    }}
+                    disabled={!driverProfile || !driverProfile.isApproved}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      className="button button-primary button-small"
+                      onClick={() => handleSendQuote(ride._id)}
+                      disabled={!driverProfile || !driverProfile.isApproved || sendingQuoteId === ride._id || !quoteAmounts[ride._id]}
+                      style={{ flex: 1 }}
+                    >
+                      {sendingQuoteId === ride._id ? 'Sending...' : '📤 Send Quote'}
+                    </button>
+                  </div>
+                </div>
               </article>
             ))}
           </div>

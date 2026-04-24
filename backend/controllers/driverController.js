@@ -174,6 +174,26 @@ const approveDriver = async (req, res) => {
   }
 };
 
+// @desc    Reject driver (admin only)
+// @route   PATCH /api/drivers/:id/reject
+const rejectDriver = async (req, res) => {
+  try {
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.id,
+      { isApproved: false },
+      { new: true }
+    ).populate('user', '-password');
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    res.status(200).json(driver);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Delete driver
 // @route   DELETE /api/drivers/:id
 const deleteDriver = async (req, res) => {
@@ -221,6 +241,7 @@ module.exports = {
   updateAvailability,
   updateLocation,
   approveDriver,
+  rejectDriver,
   deleteDriver,
   getDriverStats,
 };

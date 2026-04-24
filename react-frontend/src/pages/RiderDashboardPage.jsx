@@ -30,7 +30,8 @@ export default function RiderDashboardPage() {
     drop: '',
     date: '',
     time: '',
-    passengers: '1'
+    passengers: '1',
+    paymentMethod: 'cash'
   });
   const [riderRides, setRiderRides] = useState([]);
   const [loadingRides, setLoadingRides] = useState(false);
@@ -39,6 +40,7 @@ export default function RiderDashboardPage() {
   const [bookingError, setBookingError] = useState('');
   const [bookingMessage, setBookingMessage] = useState('');
   const [drivers, setDrivers] = useState([]);
+  const [respondingToQuoteId, setRespondingToQuoteId] = useState('');
 
   // Dynamically add Current Ride tab when there's an active ride
   const tabs = activeRide && ['accepted', 'ongoing'].includes(rideStatus)
@@ -271,6 +273,11 @@ export default function RiderDashboardPage() {
       return;
     }
 
+    if (!bookForm.paymentMethod) {
+      setBookingError('Please select a payment method.');
+      return;
+    }
+
     setBookingLoading(true);
     setBookingError('');
     setBookingMessage('');
@@ -284,18 +291,59 @@ export default function RiderDashboardPage() {
           dropLocation: bookForm.drop,
           scheduledDate: bookForm.date,
           scheduledTime: bookForm.time,
-          passengers: Number(bookForm.passengers)
+          passengers: Number(bookForm.passengers),
+          paymentMethod: bookForm.paymentMethod
         })
       });
 
       setBookingMessage('Ride request submitted successfully.');
-      setBookForm({ pickup: '', drop: '', date: '', time: '', passengers: '1' });
+      setBookForm({ pickup: '', drop: '', date: '', time: '', passengers: '1', paymentMethod: 'cash' });
       await loadRiderRides();
       setActiveTab('bookings');
     } catch (error) {
       setBookingError(error.message || 'Unable to book ride right now.');
     } finally {
       setBookingLoading(false);
+    }
+  }
+
+  async function handleAcceptQuote(rideId) {
+    setRespondingToQuoteId(rideId);
+    setRidesError('');
+
+    try {
+      await apiRequest(`/rides/${rideId}/accept-quote`, {
+        method: 'PATCH'
+      });
+
+      await loadRiderRides();
+      setBookingMessage('✅ Quote accepted! Your ride is confirmed.');
+    } catch (error) {
+      setRidesError(error.message || 'Unable to accept quote.');
+    } finally {
+      setRespondingToQuoteId('');
+    }
+  }
+
+  async function handleRejectQuote(rideId) {
+    if (!window.confirm('Are you sure you want to reject this quote? The ride will return to pending status.')) {
+      return;
+    }
+
+    setRespondingToQuoteId(rideId);
+    setRidesError('');
+
+    try {
+      await apiRequest(`/rides/${rideId}/reject-quote`, {
+        method: 'PATCH'
+      });
+
+      await loadRiderRides();
+      setBookingMessage('Quote rejected. Your ride is back to pending status.');
+    } catch (error) {
+      setRidesError(error.message || 'Unable to reject quote.');
+    } finally {
+      setRespondingToQuoteId('');
     }
   }
 
@@ -433,6 +481,12 @@ export default function RiderDashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>💰 Fare</span>
                   <strong style={{ fontSize: '1.3rem', color: '#10b981' }}>Rs. {activeRide.fare || 0}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>💳 Payment</span>
+                  <strong style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {activeRide.paymentMethod === 'cash' ? '💵 Cash on Delivery' : '💳 Card Payment'}
+                  </strong>
                 </div>
               </div>
 
@@ -650,10 +704,100 @@ export default function RiderDashboardPage() {
             </label>
           </div>
 
+          {/* Payment Method Selection */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '1rem', fontWeight: '600', fontSize: '1rem' }}>
+              Payment Method
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {/* Cash on Delivery Card */}
+              <button
+                type="button"
+                onClick={() => setBookForm((current) => ({ ...current, paymentMethod: 'cash' }))}
+                style={{
+                  padding: '1.5rem',
+                  border: bookForm.paymentMethod === 'cash' ? '3px solid #10b981' : '2px solid var(--border)',
+                  borderRadius: '12px',
+                  background: bookForm.paymentMethod === 'cash' ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s',
+                  position: 'relative'
+                }}
+              >
+                {bookForm.paymentMethod === 'cash' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: '#10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold'
+                  }}>
+                    ✓
+                  </div>
+                )}
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💵</div>
+                <strong style={{ display: 'block', fontSize: '1.1rem', marginBottom: '0.25rem' }}>Cash on Delivery</strong>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  Pay with cash when you reach your destination
+                </p>
+              </button>
+
+              {/* Card Payment Card */}
+              <button
+                type="button"
+                onClick={() => setBookForm((current) => ({ ...current, paymentMethod: 'card' }))}
+                style={{
+                  padding: '1.5rem',
+                  border: bookForm.paymentMethod === 'card' ? '3px solid #3b82f6' : '2px solid var(--border)',
+                  borderRadius: '12px',
+                  background: bookForm.paymentMethod === 'card' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s',
+                  position: 'relative'
+                }}
+              >
+                {bookForm.paymentMethod === 'card' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold'
+                  }}>
+                    ✓
+                  </div>
+                )}
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💳</div>
+                <strong style={{ display: 'block', fontSize: '1.1rem', marginBottom: '0.25rem' }}>Card Payment</strong>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  Pay securely with your credit or debit card
+                </p>
+              </button>
+            </div>
+          </div>
+
           {bookingMessage ? <div className="notice success">{bookingMessage}</div> : null}
           {bookingError ? <div className="notice error">{bookingError}</div> : null}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
             <button type="button" className="button button-primary" onClick={handleBookRide} disabled={bookingLoading}>
               {bookingLoading ? 'Booking...' : 'Book Ride Now'}
             </button>
@@ -664,11 +808,12 @@ export default function RiderDashboardPage() {
     }
 
     if (activeTab === 'bookings') {
-      const activeBookings = riderRides.filter((ride) => ['pending', 'accepted', 'ongoing'].includes(ride.status));
+      const activeBookings = riderRides.filter((ride) => ['pending', 'quoted', 'accepted', 'ongoing'].includes(ride.status));
 
       return (
         <div className="surface dashboard-panel">
           <h2>Active Bookings</h2>
+          {bookingMessage ? <div className="notice success">{bookingMessage}</div> : null}
           {ridesError ? <div className="notice error">{ridesError}</div> : null}
           {loadingRides ? <p>Loading your bookings...</p> : null}
           <div className="card-stack">
@@ -686,7 +831,63 @@ export default function RiderDashboardPage() {
                 </strong>
                 <p>{ride.scheduledDate ? new Date(ride.scheduledDate).toLocaleDateString() : 'N/A'} · {ride.scheduledTime || 'N/A'}</p>
                 <p>Passengers: {ride.passengers || 1}</p>
-                <span className={`pill ${ride.status === 'pending' ? '' : 'success'}`}>{ride.status}</span>
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0' }}>
+                  <strong>Payment:</strong> {ride.paymentMethod === 'cash' ? '💵 Cash on Delivery' : '💳 Card Payment'}
+                </p>
+                
+                {/* Show quote if status is 'quoted' */}
+                {ride.status === 'quoted' && ride.quoteStatus === 'sent' && (
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05))',
+                    borderRadius: '8px',
+                    border: '2px solid rgba(59, 130, 246, 0.3)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.5rem' }}>💰</span>
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '1rem', color: '#3b82f6' }}>Price Quote Received!</strong>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Driver: {ride.driver?.user?.name || 'Driver'}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ 
+                      fontSize: '2rem', 
+                      fontWeight: '700', 
+                      color: '#10b981', 
+                      marginBottom: '1rem',
+                      textAlign: 'center'
+                    }}>
+                      Rs. {ride.quotedFare || 0}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <button
+                        type="button"
+                        className="button button-primary button-small"
+                        onClick={() => handleAcceptQuote(ride._id)}
+                        disabled={respondingToQuoteId === ride._id}
+                        style={{ flex: 1, background: '#10b981' }}
+                      >
+                        {respondingToQuoteId === ride._id ? 'Accepting...' : '✅ Accept Quote'}
+                      </button>
+                      <button
+                        type="button"
+                        className="button button-secondary button-small"
+                        onClick={() => handleRejectQuote(ride._id)}
+                        disabled={respondingToQuoteId === ride._id}
+                        style={{ flex: 1 }}
+                      >
+                        {respondingToQuoteId === ride._id ? 'Rejecting...' : '❌ Reject'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <span className={`pill ${ride.status === 'pending' ? '' : ride.status === 'quoted' ? 'warning' : 'success'}`}>
+                  {ride.status === 'quoted' ? '💬 Quote Received' : ride.status}
+                </span>
               </article>
             ))}
           </div>
@@ -719,6 +920,9 @@ export default function RiderDashboardPage() {
                 </strong>
                 <p>{ride.scheduledDate ? new Date(ride.scheduledDate).toLocaleDateString() : 'N/A'} · {ride.scheduledTime || 'N/A'}</p>
                 <p>Fare: Rs. {ride.fare || 0}</p>
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0' }}>
+                  <strong>Payment:</strong> {ride.paymentMethod === 'cash' ? '💵 Cash on Delivery' : '💳 Card Payment'}
+                </p>
                 <span className={`pill ${ride.status === 'completed' ? 'success' : ''}`}>{ride.status}</span>
               </article>
             ))}

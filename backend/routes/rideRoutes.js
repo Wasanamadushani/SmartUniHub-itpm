@@ -12,6 +12,9 @@ const {
   cancelRide,
   rateRide,
   getPendingRides,
+  sendQuote,
+  acceptQuote,
+  rejectQuote,
   deleteRide,
 } = require('../controllers/rideController');
 
@@ -21,6 +24,9 @@ router.route('/:id').get(getRideById).delete(deleteRide);
 router.get('/rider/:riderId', getRidesByRider);
 router.get('/driver/:driverId', getRidesByDriver);
 router.patch('/:id/accept', acceptRide);
+router.patch('/:id/send-quote', sendQuote);
+router.patch('/:id/accept-quote', acceptQuote);
+router.patch('/:id/reject-quote', rejectQuote);
 router.patch('/:id/start', startRide);
 router.patch('/:id/complete', completeRide);
 router.patch('/:id/cancel', cancelRide);
