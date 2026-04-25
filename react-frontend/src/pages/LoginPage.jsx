@@ -91,7 +91,7 @@ export default function LoginPage() {
 
       const userData = result.user || result;
       storeAuthenticatedUser(userData);
-      navigate('/dashboard');
+      navigate(resolveDashboardPath(userData.role));
     } catch (error) {
       setErrorMessage(error.message || 'Unable to log in right now.');
     } finally {
