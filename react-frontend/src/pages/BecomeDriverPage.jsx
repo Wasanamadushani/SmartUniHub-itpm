@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { isValidPhone, isValidStudentId } from '../lib/validation';
+import { apiRequest } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 const benefits = [
   'Flexible ride sharing with fellow SLIIT students.',
@@ -9,34 +12,38 @@ const benefits = [
 ];
 
 export default function BecomeDriverPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [formState, setFormState] = useState({
-    fullName: '',
-    studentId: '',
-    phone: '',
-    vehicleType: '',
+    vehicleType: 'Sedan',
+    vehicleNumber: '',
+    vehicleModel: '',
     licenseNumber: '',
-    seats: '3',
-    vehicleDescription: ''
+    capacity: '4'
   });
   const [touched, setTouched] = useState({});
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const errors = {
-    fullName: !formState.fullName.trim() ? 'Full name is required.' : formState.fullName.trim().length < 3 ? 'Name must be at least 3 characters.' : '',
-    studentId: !formState.studentId.trim()
-      ? 'Student ID is required.'
-      : !isValidStudentId(formState.studentId)
-        ? 'Use format IT########.'
+    vehicleType: !formState.vehicleType.trim() ? 'Vehicle type is required.' : '',
+    vehicleNumber: !formState.vehicleNumber.trim() 
+      ? 'Vehicle number is required.' 
+      : formState.vehicleNumber.trim().length < 5 
+        ? 'Vehicle number looks too short.' 
         : '',
-    phone: !formState.phone.trim() ? 'Phone number is required.' : !isValidPhone(formState.phone) ? 'Use 07XXXXXXXX or +947XXXXXXXX.' : '',
-    vehicleType: !formState.vehicleType.trim() ? 'Vehicle type is required.' : formState.vehicleType.trim().length < 2 ? 'Enter a clearer vehicle type.' : '',
-    licenseNumber: !formState.licenseNumber.trim() ? 'License number is required.' : formState.licenseNumber.trim().length < 6 ? 'License number looks too short.' : '',
-    seats: Number(formState.seats) < 1 ? 'Seat count must be at least 1.' : '',
-    vehicleDescription: !formState.vehicleDescription.trim()
-      ? 'Vehicle description is required.'
-      : formState.vehicleDescription.trim().length < 20
-        ? 'Add at least 20 characters for better rider confidence.'
-        : ''
+    vehicleModel: !formState.vehicleModel.trim() 
+      ? 'Vehicle model is required.' 
+      : formState.vehicleModel.trim().length < 2 
+        ? 'Enter a valid vehicle model.' 
+        : '',
+    licenseNumber: !formState.licenseNumber.trim() 
+      ? 'License number is required.' 
+      : formState.licenseNumber.trim().length < 6 
+        ? 'License number looks too short.' 
+        : '',
+    capacity: Number(formState.capacity) < 1 ? 'Capacity must be at least 1.' : ''
   };
 
   const isFormValid = Object.values(errors).every((value) => !value);
@@ -45,24 +52,54 @@ export default function BecomeDriverPage() {
     setTouched((current) => ({ ...current, [field]: true }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     setTouched({
-      fullName: true,
-      studentId: true,
-      phone: true,
       vehicleType: true,
+      vehicleNumber: true,
+      vehicleModel: true,
       licenseNumber: true,
-      seats: true,
-      vehicleDescription: true
+      capacity: true
     });
 
     if (!isFormValid) {
       return;
     }
 
-    setSubmitted(true);
+    if (!user || !user._id) {
+      setErrorMessage('You must be logged in to apply as a driver.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      await apiRequest('/drivers', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: user._id,
+          vehicleType: formState.vehicleType,
+          vehicleNumber: formState.vehicleNumber,
+          vehicleModel: formState.vehicleModel,
+          licenseNumber: formState.licenseNumber,
+          capacity: Number(formState.capacity)
+        })
+      });
+
+      setSuccessMessage('Driver application submitted successfully! Your application is pending admin approval.');
+      
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 3000);
+    } catch (error) {
+      setErrorMessage(error.message || 'Unable to submit driver application. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -90,60 +127,53 @@ export default function BecomeDriverPage() {
             <h2>Driver Registration</h2>
             <p className="form-note">Complete the form to create your driver profile.</p>
 
-            {submitted ? <div className="notice success">Driver application received. We will review your details shortly.</div> : null}
+            {errorMessage ? <div className="notice error">{errorMessage}</div> : null}
+            {successMessage ? <div className="notice success">{successMessage}</div> : null}
 
             <div className="field-grid two-col">
               <label>
-                <span className="field-label-row">Full Name</span>
-                <input
-                  type="text"
-                  value={formState.fullName}
-                  onChange={(event) => setFormState((current) => ({ ...current, fullName: event.target.value }))}
-                  onBlur={() => touchField('fullName')}
-                  placeholder="Your full name"
-                  className={touched.fullName && errors.fullName ? 'input-error' : ''}
-                  required
-                />
-                {touched.fullName && errors.fullName ? <span className="field-error">{errors.fullName}</span> : null}
-              </label>
-              <label>
-                <span className="field-label-row">Student ID</span>
-                <input
-                  type="text"
-                  value={formState.studentId}
-                  onChange={(event) => setFormState((current) => ({ ...current, studentId: event.target.value }))}
-                  onBlur={() => touchField('studentId')}
-                  placeholder="IT21000000"
-                  className={touched.studentId && errors.studentId ? 'input-error' : ''}
-                  required
-                />
-                {touched.studentId && errors.studentId ? <span className="field-error">{errors.studentId}</span> : null}
-              </label>
-              <label>
-                <span className="field-label-row">Phone Number</span>
-                <input
-                  type="tel"
-                  value={formState.phone}
-                  onChange={(event) => setFormState((current) => ({ ...current, phone: event.target.value }))}
-                  onBlur={() => touchField('phone')}
-                  placeholder="07XXXXXXXX"
-                  className={touched.phone && errors.phone ? 'input-error' : ''}
-                  required
-                />
-                {touched.phone && errors.phone ? <span className="field-error">{errors.phone}</span> : null}
-              </label>
-              <label>
                 <span className="field-label-row">Vehicle Type</span>
-                <input
-                  type="text"
+                <select
                   value={formState.vehicleType}
                   onChange={(event) => setFormState((current) => ({ ...current, vehicleType: event.target.value }))}
                   onBlur={() => touchField('vehicleType')}
-                  placeholder="Sedan, hatchback, van..."
                   className={touched.vehicleType && errors.vehicleType ? 'input-error' : ''}
                   required
-                />
+                >
+                  <option value="Sedan">Sedan</option>
+                  <option value="Hatchback">Hatchback</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Van">Van</option>
+                  <option value="Motorbike">Motorbike</option>
+                  <option value="Tuk-Tuk">Tuk-Tuk</option>
+                </select>
                 {touched.vehicleType && errors.vehicleType ? <span className="field-error">{errors.vehicleType}</span> : null}
+              </label>
+              <label>
+                <span className="field-label-row">Vehicle Number</span>
+                <input
+                  type="text"
+                  value={formState.vehicleNumber}
+                  onChange={(event) => setFormState((current) => ({ ...current, vehicleNumber: event.target.value }))}
+                  onBlur={() => touchField('vehicleNumber')}
+                  placeholder="ABC-1234"
+                  className={touched.vehicleNumber && errors.vehicleNumber ? 'input-error' : ''}
+                  required
+                />
+                {touched.vehicleNumber && errors.vehicleNumber ? <span className="field-error">{errors.vehicleNumber}</span> : null}
+              </label>
+              <label>
+                <span className="field-label-row">Vehicle Model</span>
+                <input
+                  type="text"
+                  value={formState.vehicleModel}
+                  onChange={(event) => setFormState((current) => ({ ...current, vehicleModel: event.target.value }))}
+                  onBlur={() => touchField('vehicleModel')}
+                  placeholder="Toyota Corolla, Honda Civic, etc."
+                  className={touched.vehicleModel && errors.vehicleModel ? 'input-error' : ''}
+                  required
+                />
+                {touched.vehicleModel && errors.vehicleModel ? <span className="field-error">{errors.vehicleModel}</span> : null}
               </label>
               <label>
                 <span className="field-label-row">License Number</span>
@@ -159,36 +189,29 @@ export default function BecomeDriverPage() {
                 {touched.licenseNumber && errors.licenseNumber ? <span className="field-error">{errors.licenseNumber}</span> : null}
               </label>
               <label>
-                <span className="field-label-row">Available Seats</span>
+                <span className="field-label-row">Passenger Capacity</span>
                 <select
-                  value={formState.seats}
-                  onChange={(event) => setFormState((current) => ({ ...current, seats: event.target.value }))}
-                  onBlur={() => touchField('seats')}
+                  value={formState.capacity}
+                  onChange={(event) => setFormState((current) => ({ ...current, capacity: event.target.value }))}
+                  onBlur={() => touchField('capacity')}
+                  className={touched.capacity && errors.capacity ? 'input-error' : ''}
+                  required
                 >
-                  <option value="1">1 Seat</option>
-                  <option value="2">2 Seats</option>
-                  <option value="3">3 Seats</option>
-                  <option value="4">4 Seats</option>
+                  <option value="1">1 Passenger</option>
+                  <option value="2">2 Passengers</option>
+                  <option value="3">3 Passengers</option>
+                  <option value="4">4 Passengers</option>
+                  <option value="5">5 Passengers</option>
+                  <option value="6">6 Passengers</option>
+                  <option value="7">7 Passengers</option>
+                  <option value="8">8 Passengers</option>
                 </select>
+                {touched.capacity && errors.capacity ? <span className="field-error">{errors.capacity}</span> : null}
               </label>
             </div>
 
-            <label>
-              <span className="field-label-row">Vehicle Description</span>
-              <textarea
-                rows="4"
-                value={formState.vehicleDescription}
-                onChange={(event) => setFormState((current) => ({ ...current, vehicleDescription: event.target.value }))}
-                onBlur={() => touchField('vehicleDescription')}
-                placeholder="Vehicle make, model, color, AC availability, and any useful details"
-                className={touched.vehicleDescription && errors.vehicleDescription ? 'input-error' : ''}
-              />
-              <span className="field-helper">{formState.vehicleDescription.trim().length}/20 minimum recommended characters</span>
-              {touched.vehicleDescription && errors.vehicleDescription ? <span className="field-error">{errors.vehicleDescription}</span> : null}
-            </label>
-
-            <button type="submit" className="button button-primary button-full" disabled={!isFormValid}>
-              Submit Driver Application
+            <button type="submit" className="button button-primary button-full" disabled={loading || !isFormValid}>
+              {loading ? 'Submitting Application...' : 'Submit Driver Application'}
             </button>
           </form>
         </div>
