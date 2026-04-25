@@ -15,6 +15,7 @@ const {
   sendQuote,
   acceptQuote,
   rejectQuote,
+  confirmDropoff,
   deleteRide,
 } = require('../controllers/rideController');
 
@@ -29,6 +30,7 @@ router.patch('/:id/accept-quote', acceptQuote);
 router.patch('/:id/reject-quote', rejectQuote);
 router.patch('/:id/start', startRide);
 router.patch('/:id/complete', completeRide);
+router.patch('/:id/confirm-dropoff', confirmDropoff);
 router.patch('/:id/cancel', cancelRide);
 router.patch('/:id/rate', rateRide);
 

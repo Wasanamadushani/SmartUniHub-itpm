@@ -16,6 +16,7 @@ import AdminStudyAreaPage from './pages/AdminStudyAreaPage';
 import CanteenAdminPage from './pages/CanteenAdminPage';
 import AdminEventsPage from './pages/AdminEventsPage';
 import TrackRidePage from './pages/TrackRidePage';
+import RidePaymentPage from './pages/RidePaymentPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailsPage from './pages/EventDetailsPage';
 import CreateEventPage from './pages/CreateEventPage';
@@ -91,6 +92,7 @@ export default function App() {
               <Route path="/admin/events" element={<ProtectedRoute requiredRole="admin"><AdminEventsPage /></ProtectedRoute>} />
               <Route path="/adminevent" element={<ProtectedRoute requiredRole="admin"><AdminEventsPage /></ProtectedRoute>} />
               <Route path="/track-ride" element={<TrackRidePage />} />
+              <Route path="/ride-payment" element={<RidePaymentPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:id" element={<EventDetailsPage />} />
               <Route path="/create-event" element={<CreateEventPage />} />

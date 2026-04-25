@@ -77,6 +77,14 @@ const rideSchema = new mongoose.Schema(
       enum: ['cash', 'card'],
       default: 'cash',
     },
+    cardPayment: {
+      cardHolderName: { type: String },
+      cardLast4: { type: String },
+      cardExpiry: { type: String },
+      receiptUrl: { type: String },
+      receiptFileName: { type: String },
+      paidAt: { type: Date },
+    },
     riderRating: {
       type: Number,
       min: 1,
@@ -104,6 +112,13 @@ const rideSchema = new mongoose.Schema(
     },
     cancellationReason: {
       type: String,
+    },
+    droppedOffConfirmed: {
+      type: Boolean,
+      default: false,
+    },
+    droppedOffConfirmedAt: {
+      type: Date,
     },
   },
   {

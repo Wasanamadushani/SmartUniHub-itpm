@@ -5,7 +5,7 @@ const Driver = require('../models/Driver');
 // @route   POST /api/rides
 const createRide = async (req, res) => {
   try {
-    const { riderId, pickupLocation, dropLocation, scheduledDate, scheduledTime, passengers } = req.body;
+    const { riderId, pickupLocation, dropLocation, scheduledDate, scheduledTime, passengers, paymentMethod } = req.body;
 
     if (!riderId || !pickupLocation || !dropLocation || !scheduledDate || !scheduledTime || !passengers) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -18,6 +18,7 @@ const createRide = async (req, res) => {
       scheduledDate,
       scheduledTime,
       passengers,
+      paymentMethod: paymentMethod || 'cash', // Default to 'cash' if not provided
     });
 
     const populatedRide = await Ride.findById(ride._id)
@@ -297,6 +298,24 @@ const rateRide = async (req, res) => {
 // @route   GET /api/rides/pending
 const getPendingRides = async (req, res) => {
   try {
+    const { driverId } = req.query;
+
+    // If driverId is provided, check if driver has any unconfirmed completed rides
+    if (driverId) {
+      const unconfirmedRides = await Ride.find({
+        driver: driverId,
+        status: 'completed',
+        droppedOffConfirmed: false
+      });
+
+      if (unconfirmedRides.length > 0) {
+        return res.status(403).json({ 
+          message: 'You have completed rides waiting for rider confirmation. Cannot accept new requests until riders confirm drop-off.',
+          unconfirmedRides: unconfirmedRides.length
+        });
+      }
+    }
+
     const rides = await Ride.find({ status: { $in: ['pending', 'quoted'] } })
       .populate('rider', '-password')
       .populate({
@@ -319,6 +338,20 @@ const sendQuote = async (req, res) => {
 
     if (!quotedFare || quotedFare <= 0) {
       return res.status(400).json({ message: 'Valid fare amount is required' });
+    }
+
+    // Check if driver has any unconfirmed completed rides
+    const unconfirmedRides = await Ride.find({
+      driver: driverId,
+      status: 'completed',
+      droppedOffConfirmed: false
+    });
+
+    if (unconfirmedRides.length > 0) {
+      return res.status(403).json({ 
+        message: 'You have completed rides waiting for rider confirmation. Cannot send quotes until riders confirm drop-off.',
+        unconfirmedRides: unconfirmedRides.length
+      });
     }
 
     const ride = await Ride.findById(req.params.id);
@@ -354,6 +387,8 @@ const sendQuote = async (req, res) => {
 // @route   PATCH /api/rides/:id/accept-quote
 const acceptQuote = async (req, res) => {
   try {
+    const { cardPayment } = req.body;
+
     const ride = await Ride.findById(req.params.id);
     if (!ride) {
       return res.status(404).json({ message: 'Ride not found' });
@@ -367,6 +402,20 @@ const acceptQuote = async (req, res) => {
     ride.status = 'accepted';
     ride.fare = ride.quotedFare;
     ride.quoteRespondedAt = new Date();
+
+    // If card payment details are provided, save them
+    if (cardPayment && ride.paymentMethod === 'card') {
+      ride.cardPayment = {
+        cardHolderName: cardPayment.cardHolderName,
+        cardLast4: cardPayment.cardLast4,
+        cardExpiry: cardPayment.cardExpiry,
+        receiptUrl: cardPayment.receiptUrl || '',
+        receiptFileName: cardPayment.receiptFileName || '',
+        paidAt: new Date(),
+      };
+      ride.paymentStatus = 'paid';
+    }
+
     await ride.save();
 
     const populatedRide = await Ride.findById(ride._id)
@@ -415,6 +464,40 @@ const rejectQuote = async (req, res) => {
   }
 };
 
+// @desc    Confirm drop-off (rider)
+// @route   PATCH /api/rides/:id/confirm-dropoff
+const confirmDropoff = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id);
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.status !== 'completed') {
+      return res.status(400).json({ message: 'Can only confirm drop-off for completed rides' });
+    }
+
+    if (ride.droppedOffConfirmed) {
+      return res.status(400).json({ message: 'Drop-off already confirmed' });
+    }
+
+    ride.droppedOffConfirmed = true;
+    ride.droppedOffConfirmedAt = new Date();
+    await ride.save();
+
+    const populatedRide = await Ride.findById(ride._id)
+      .populate('rider', '-password')
+      .populate({
+        path: 'driver',
+        populate: { path: 'user', select: '-password' }
+      });
+
+    res.status(200).json(populatedRide);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Delete a ride
 // @route   DELETE /api/rides/:id
 const deleteRide = async (req, res) => {
@@ -444,5 +527,6 @@ module.exports = {
   sendQuote,
   acceptQuote,
   rejectQuote,
+  confirmDropoff,
   deleteRide,
 };

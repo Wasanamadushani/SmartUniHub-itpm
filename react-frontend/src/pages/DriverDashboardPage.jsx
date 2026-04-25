@@ -253,7 +253,11 @@ export default function DriverDashboardPage() {
     setRequestError('');
 
     try {
-      const rides = await apiRequest('/api/rides/pending');
+      // Pass driverId to check for unconfirmed rides
+      const driverId = driverProfile?._id;
+      const url = driverId ? `/api/rides/pending?driverId=${driverId}` : '/api/rides/pending';
+      
+      const rides = await apiRequest(url);
       const ridesArray = Array.isArray(rides) ? rides : [];
       
       // Only show rides if driver is approved
@@ -268,7 +272,13 @@ export default function DriverDashboardPage() {
         setPendingRides([]);
       }
     } catch (error) {
-      setRequestError(error.message || 'Unable to load ride requests right now.');
+      // Check if error is due to unconfirmed rides (403 status)
+      if (error.message && error.message.includes('waiting for rider confirmation')) {
+        setRequestError(error.message);
+        setPendingRides([]);
+      } else {
+        setRequestError(error.message || 'Unable to load ride requests right now.');
+      }
     } finally {
       setLoadingRequests(false);
     }
@@ -280,7 +290,7 @@ export default function DriverDashboardPage() {
     }
 
     loadPendingRides();
-  }, [activeTab]);
+  }, [activeTab, driverProfile?._id]);
 
   useEffect(() => {
     if (activeRide?.status) {
@@ -724,9 +734,72 @@ export default function DriverDashboardPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>💳 Payment</span>
-                  <strong>Cash on Delivery</strong>
+                  <strong>{activeRide.paymentMethod === 'cash' ? '💵 Cash on Delivery' : '💳 Card Payment'}</strong>
                 </div>
               </div>
+
+              {/* Show payment receipt for card payments */}
+              {activeRide.paymentMethod === 'card' && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: 'rgba(59, 130, 246, 0.05)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🧾</span>
+                    <strong style={{ fontSize: '0.95rem' }}>Payment Receipt</strong>
+                  </div>
+                  
+                  {activeRide.cardPayment?.receiptUrl ? (
+                    <>
+                      <div style={{ marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        <div>Card: •••• {activeRide.cardPayment.cardLast4 || 'N/A'}</div>
+                        <div>Holder: {activeRide.cardPayment.cardHolderName || 'N/A'}</div>
+                        <div>File: {activeRide.cardPayment.receiptFileName || 'receipt'}</div>
+                        {activeRide.cardPayment.paidAt && (
+                          <div>Paid: {new Date(activeRide.cardPayment.paidAt).toLocaleString()}</div>
+                        )}
+                      </div>
+                      <a
+                        href={activeRide.cardPayment.receiptUrl}
+                        download={activeRide.cardPayment.receiptFileName || 'receipt'}
+                        className="button button-secondary button-small"
+                        style={{ width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
+                      >
+                        📥 Download Receipt
+                      </a>
+                      {activeRide.cardPayment.receiptUrl.startsWith('data:image') && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          <img
+                            src={activeRide.cardPayment.receiptUrl}
+                            alt="Payment Receipt"
+                            style={{
+                              width: '100%',
+                              maxHeight: '200px',
+                              objectFit: 'contain',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border)',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => window.open(activeRide.cardPayment.receiptUrl, '_blank')}
+                          />
+                          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted)', textAlign: 'center' }}>
+                            Click to view full size
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                      {activeRide.paymentStatus === 'paid' 
+                        ? 'Payment confirmed - Receipt processing...' 
+                        : 'Waiting for payment confirmation...'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <button type="button" className="button button-secondary" style={{ width: '100%' }} onClick={handleCallRider}>
@@ -946,7 +1019,36 @@ export default function DriverDashboardPage() {
         <div className="surface dashboard-panel">
           <h2>Ride Requests</h2>
           {requestMessage ? <div className="notice success">{requestMessage}</div> : null}
-          {requestError ? <div className="notice error">{requestError}</div> : null}
+          
+          {/* Show blocking message if there are unconfirmed rides */}
+          {requestError && requestError.includes('waiting for rider confirmation') ? (
+            <div className="notice" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1rem',
+              alignItems: 'flex-start',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '3px solid rgba(245, 158, 11, 0.5)',
+              color: '#92400e'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '3rem' }}>⏳</span>
+                <div>
+                  <strong style={{ fontSize: '1.2rem', display: 'block', marginBottom: '0.5rem' }}>
+                    ⚠️ Waiting for Rider Confirmation
+                  </strong>
+                  <p style={{ margin: 0, fontSize: '1rem' }}>
+                    {requestError}
+                  </p>
+                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                    You cannot accept new ride requests until your previous riders confirm their drop-off. Please wait for them to confirm.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : requestError ? (
+            <div className="notice error">{requestError}</div>
+          ) : null}
 
           {!driverProfile ? (
             <div className="notice error" style={{ 
@@ -992,7 +1094,7 @@ export default function DriverDashboardPage() {
           {loadingRequests ? <p>Loading ride requests...</p> : null}
 
           <div className="card-stack">
-            {!loadingRequests && pendingRides.length === 0 ? (
+            {!loadingRequests && pendingRides.length === 0 && !requestError?.includes('waiting for rider confirmation') ? (
               <article className="surface nested-card">
                 <strong>No pending rides</strong>
                 <p>New rider requests will appear here when available.</p>

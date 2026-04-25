@@ -43,6 +43,15 @@ export default function RiderDashboardPage() {
   const [respondingToQuoteId, setRespondingToQuoteId] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationItems, setNotificationItems] = useState([]);
+  const [showCardPaymentForRide, setShowCardPaymentForRide] = useState(null);
+  const [cardPaymentForm, setCardPaymentForm] = useState({
+    cardHolderName: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvv: '',
+    receiptFile: null
+  });
+  const [cardPaymentError, setCardPaymentError] = useState('');
 
   // Dynamically add Current Ride tab when there's an active ride
   const tabs = activeRide && ['accepted', 'ongoing'].includes(rideStatus)
@@ -106,27 +115,42 @@ export default function RiderDashboardPage() {
         const response = await apiRequest(`/api/rides/rider/${currentUserId}`);
         const rides = Array.isArray(response) ? response : [];
         
-        // Find the first accepted or ongoing ride
+        // Find the first accepted, ongoing, or unconfirmed completed ride
         const activeRideData = rides.find(ride => 
-          ride.status === 'accepted' || ride.status === 'ongoing'
+          ride.status === 'accepted' || 
+          ride.status === 'ongoing' ||
+          (ride.status === 'completed' && !ride.droppedOffConfirmed)
         );
 
         if (activeRideData) {
           setActiveRide(activeRideData);
           setRideStatus(activeRideData.status);
           
-          // Auto-switch to current ride tab if a ride was just accepted
-          if (activeRideData.status === 'accepted' && !activeRide) {
+          // Auto-switch to current ride tab if a ride was just accepted or completed
+          if ((activeRideData.status === 'accepted' || activeRideData.status === 'completed') && !activeRide) {
             setActiveTab('current-ride');
           }
-        } else if (activeRide && (activeRide.status === 'completed' || activeRide.status === 'cancelled')) {
-          // Clear active ride if it's completed or cancelled
+        } else if (activeRide && activeRide.status === 'cancelled') {
+          // Clear active ride if it's cancelled
           setActiveRide(null);
           setRideStatus('idle');
           setDriverLocation(null);
           if (activeTab === 'current-ride') {
             setActiveTab('overview');
           }
+        } else if (activeRide && activeRide.status === 'completed' && activeRide.droppedOffConfirmed) {
+          // Only clear completed ride if drop-off has been confirmed
+          setActiveRide(null);
+          setRideStatus('idle');
+          setDriverLocation(null);
+          if (activeTab === 'current-ride') {
+            setActiveTab('overview');
+          }
+        } else if (!activeRideData && activeRide) {
+          // Clear active ride if no active rides found (including confirmed completed rides)
+          setActiveRide(null);
+          setRideStatus('idle');
+          setDriverLocation(null);
         }
       } catch (error) {
         console.error('Failed to check for active ride:', error);
@@ -316,21 +340,32 @@ export default function RiderDashboardPage() {
     setBookingMessage('');
 
     try {
+      const rideData = {
+        riderId: currentUserId,
+        pickupLocation: bookForm.pickup,
+        dropLocation: bookForm.drop,
+        scheduledDate: bookForm.date,
+        scheduledTime: bookForm.time,
+        passengers: Number(bookForm.passengers),
+        paymentMethod: bookForm.paymentMethod
+      };
+
       await apiRequest('/api/rides', {
         method: 'POST',
-        body: JSON.stringify({
-          riderId: currentUserId,
-          pickupLocation: bookForm.pickup,
-          dropLocation: bookForm.drop,
-          scheduledDate: bookForm.date,
-          scheduledTime: bookForm.time,
-          passengers: Number(bookForm.passengers),
-          paymentMethod: bookForm.paymentMethod
-        })
+        body: JSON.stringify(rideData)
       });
 
-      setBookingMessage('Ride request submitted successfully.');
-      setBookForm({ pickup: '', drop: '', date: '', time: '', passengers: '1', paymentMethod: 'cash' });
+      setBookingMessage('Ride request submitted successfully. Waiting for driver to send price quote.');
+      
+      setBookForm({ 
+        pickup: '', 
+        drop: '', 
+        date: '', 
+        time: '', 
+        passengers: '1', 
+        paymentMethod: 'cash'
+      });
+      
       await loadRiderRides();
       setActiveTab('bookings');
     } catch (error) {
@@ -341,6 +376,7 @@ export default function RiderDashboardPage() {
   }
 
   async function handleAcceptQuote(rideId) {
+    // For cash payment, accept quote directly
     setRespondingToQuoteId(rideId);
     setRidesError('');
 
@@ -353,6 +389,96 @@ export default function RiderDashboardPage() {
       setBookingMessage('✅ Quote accepted! Your ride is confirmed.');
     } catch (error) {
       setRidesError(error.message || 'Unable to accept quote.');
+    } finally {
+      setRespondingToQuoteId('');
+    }
+  }
+
+  async function handleSubmitCardPayment(rideId) {
+    // Validate card details
+    if (!cardPaymentForm.cardHolderName || !cardPaymentForm.cardNumber || !cardPaymentForm.cardExpiry || !cardPaymentForm.cardCvv) {
+      setCardPaymentError('Please fill in all card payment details.');
+      return;
+    }
+
+    // Validate card number (16 digits)
+    const cardDigits = cardPaymentForm.cardNumber.replace(/\s+/g, '');
+    if (!/^\d{16}$/.test(cardDigits)) {
+      setCardPaymentError('Please enter a valid 16-digit card number.');
+      return;
+    }
+
+    // Validate cardholder name
+    if (!/^[A-Za-z ]{3,80}$/.test(cardPaymentForm.cardHolderName.trim())) {
+      setCardPaymentError('Please enter a valid cardholder name (letters and spaces only).');
+      return;
+    }
+
+    // Validate expiry format
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardPaymentForm.cardExpiry)) {
+      setCardPaymentError('Please enter a valid expiry date (MM/YY).');
+      return;
+    }
+
+    // Validate expiry is in the future
+    const [month, year] = cardPaymentForm.cardExpiry.split('/').map(Number);
+    const expiryYear = 2000 + year;
+    const expiryDate = new Date(expiryYear, month, 0, 23, 59, 59);
+    if (expiryDate < new Date()) {
+      setCardPaymentError('Card has expired. Please use a valid card.');
+      return;
+    }
+
+    // Validate CVV (3 digits)
+    if (!/^\d{3}$/.test(cardPaymentForm.cardCvv)) {
+      setCardPaymentError('Please enter a valid 3-digit CVV.');
+      return;
+    }
+
+    // Validate receipt upload
+    if (!cardPaymentForm.receiptFile) {
+      setCardPaymentError('Please upload your payment receipt.');
+      return;
+    }
+
+    setRespondingToQuoteId(rideId);
+    setCardPaymentError('');
+
+    try {
+      // Convert receipt file to base64
+      const receiptBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(cardPaymentForm.receiptFile);
+      });
+
+      // Accept the quote with card payment details
+      await apiRequest(`/api/rides/${rideId}/accept-quote`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          cardPayment: {
+            cardHolderName: cardPaymentForm.cardHolderName.trim(),
+            cardLast4: cardDigits.slice(-4),
+            cardExpiry: cardPaymentForm.cardExpiry,
+            receiptUrl: receiptBase64,
+            receiptFileName: cardPaymentForm.receiptFile.name
+          }
+        })
+      });
+
+      await loadRiderRides();
+      setBookingMessage('✅ Payment successful! Your ride is confirmed.');
+      setShowCardPaymentForRide(null);
+      setCardPaymentForm({
+        cardHolderName: '',
+        cardNumber: '',
+        cardExpiry: '',
+        cardCvv: '',
+        receiptFile: null
+      });
+    } catch (error) {
+      setCardPaymentError(error.message || 'Unable to process payment.');
     } finally {
       setRespondingToQuoteId('');
     }
@@ -375,6 +501,36 @@ export default function RiderDashboardPage() {
       setBookingMessage('Quote rejected. Your ride is back to pending status.');
     } catch (error) {
       setRidesError(error.message || 'Unable to reject quote.');
+    } finally {
+      setRespondingToQuoteId('');
+    }
+  }
+
+  async function handleConfirmDropoff(rideId) {
+    setRespondingToQuoteId(rideId);
+    setRidesError('');
+
+    try {
+      const confirmedRide = await apiRequest(`/api/rides/${rideId}/confirm-dropoff`, {
+        method: 'PATCH'
+      });
+
+      // Update the active ride with confirmed status
+      if (activeRide?._id === rideId) {
+        setActiveRide(confirmedRide);
+      }
+
+      await loadRiderRides();
+      setBookingMessage('✅ Drop-off confirmed! Thank you for using our service.');
+      
+      // Clear active ride and return to overview after a short delay
+      setTimeout(() => {
+        setActiveRide(null);
+        setRideStatus('idle');
+        setActiveTab('overview');
+      }, 2000);
+    } catch (error) {
+      setRidesError(error.message || 'Unable to confirm drop-off.');
     } finally {
       setRespondingToQuoteId('');
     }
@@ -660,6 +816,42 @@ export default function RiderDashboardPage() {
           {/* Quick Actions */}
           <div className="surface dashboard-panel">
             <h3 style={{ marginBottom: '1rem' }}>Quick Actions</h3>
+            
+            {/* Show Confirm Drop-off button prominently if ride is completed but not confirmed */}
+            {rideStatus === 'completed' && activeRide && !activeRide.droppedOffConfirmed && (
+              <div style={{
+                marginBottom: '1.5rem',
+                padding: '1.5rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))',
+                borderRadius: '12px',
+                border: '3px solid #10b981',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>✅</div>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', color: '#10b981' }}>
+                  Confirm Your Drop-off
+                </h3>
+                <p style={{ margin: '0 0 1.5rem 0', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                  Please confirm that you have been safely dropped off at your destination. This helps your driver accept new ride requests.
+                </p>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={() => handleConfirmDropoff(activeRide._id)}
+                  disabled={respondingToQuoteId === activeRide._id}
+                  style={{
+                    padding: '1rem 2.5rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    background: '#10b981',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  {respondingToQuoteId === activeRide._id ? 'Confirming...' : '✅ Confirm Drop-off'}
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <button type="button" className="button button-secondary" style={{ padding: '1rem' }}>
                 🚨 Report Issue
@@ -827,6 +1019,8 @@ export default function RiderDashboardPage() {
             </div>
           </div>
 
+
+
           {bookingMessage ? <div className="notice success">{bookingMessage}</div> : null}
           {bookingError ? <div className="notice error">{bookingError}</div> : null}
 
@@ -895,26 +1089,179 @@ export default function RiderDashboardPage() {
                     }}>
                       Rs. {ride.quotedFare || 0}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                      <button
-                        type="button"
-                        className="button button-primary button-small"
-                        onClick={() => handleAcceptQuote(ride._id)}
-                        disabled={respondingToQuoteId === ride._id}
-                        style={{ flex: 1, background: '#10b981' }}
-                      >
-                        {respondingToQuoteId === ride._id ? 'Accepting...' : '✅ Accept Quote'}
-                      </button>
-                      <button
-                        type="button"
-                        className="button button-secondary button-small"
-                        onClick={() => handleRejectQuote(ride._id)}
-                        disabled={respondingToQuoteId === ride._id}
-                        style={{ flex: 1 }}
-                      >
-                        {respondingToQuoteId === ride._id ? 'Rejecting...' : '❌ Reject'}
-                      </button>
-                    </div>
+
+                    {/* Show card payment form if payment method is card */}
+                    {ride.paymentMethod === 'card' ? (
+                      <div style={{
+                        marginTop: '1rem',
+                        padding: '1.5rem',
+                        background: 'rgba(255, 255, 255, 0.5)',
+                        borderRadius: '8px',
+                        border: '2px solid rgba(59, 130, 246, 0.3)'
+                      }}>
+                        <h4 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          💳 Card Payment Details
+                        </h4>
+                        
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                          {/* Cardholder Name */}
+                          <label>
+                            <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>Cardholder Name</span>
+                            <input
+                              type="text"
+                              value={cardPaymentForm.cardHolderName}
+                              onChange={(e) => setCardPaymentForm((current) => ({ ...current, cardHolderName: e.target.value }))}
+                              placeholder="John Doe"
+                              style={{ width: '100%' }}
+                            />
+                          </label>
+
+                          {/* Card Number */}
+                          <label>
+                            <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>Card Number</span>
+                            <input
+                              type="text"
+                              value={cardPaymentForm.cardNumber}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\s+/g, '').replace(/\D/g, '');
+                                if (value.length <= 16) {
+                                  const formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+                                  setCardPaymentForm((current) => ({ ...current, cardNumber: formatted }));
+                                }
+                              }}
+                              placeholder="1234 5678 9012 3456"
+                              maxLength="19"
+                              style={{ width: '100%' }}
+                            />
+                          </label>
+
+                          {/* Expiry and CVV */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <label>
+                              <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>Expiry Date</span>
+                              <input
+                                type="text"
+                                value={cardPaymentForm.cardExpiry}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  if (value.length <= 4) {
+                                    const formatted = value.length >= 2 ? `${value.slice(0, 2)}/${value.slice(2, 4)}` : value;
+                                    setCardPaymentForm((current) => ({ ...current, cardExpiry: formatted }));
+                                  }
+                                }}
+                                placeholder="MM/YY"
+                                maxLength="5"
+                                style={{ width: '100%' }}
+                              />
+                            </label>
+
+                            <label>
+                              <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>CVV</span>
+                              <input
+                                type="text"
+                                value={cardPaymentForm.cardCvv}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  if (value.length <= 3) {
+                                    setCardPaymentForm((current) => ({ ...current, cardCvv: value }));
+                                  }
+                                }}
+                                placeholder="123"
+                                maxLength="3"
+                                style={{ width: '100%' }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Receipt Upload */}
+                          <label>
+                            <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>Upload Payment Receipt</span>
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setCardPaymentForm((current) => ({ ...current, receiptFile: file }));
+                                }
+                              }}
+                              style={{ width: '100%' }}
+                            />
+                            {cardPaymentForm.receiptFile && (
+                              <span style={{ fontSize: '0.85rem', color: '#10b981', marginTop: '0.25rem', display: 'block' }}>
+                                ✓ {cardPaymentForm.receiptFile.name}
+                              </span>
+                            )}
+                          </label>
+
+                          {/* Security Note */}
+                          <div style={{
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>
+                              Your payment information is secure and encrypted
+                            </span>
+                          </div>
+
+                          {cardPaymentError && (
+                            <div className="notice error" style={{ margin: 0 }}>
+                              {cardPaymentError}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                          <button
+                            type="button"
+                            className="button button-primary button-small"
+                            onClick={() => handleSubmitCardPayment(ride._id)}
+                            disabled={respondingToQuoteId === ride._id}
+                            style={{ flex: 1, background: '#10b981' }}
+                          >
+                            {respondingToQuoteId === ride._id ? 'Processing...' : '✅ Accept Quote & Pay'}
+                          </button>
+                          <button
+                            type="button"
+                            className="button button-secondary button-small"
+                            onClick={() => handleRejectQuote(ride._id)}
+                            disabled={respondingToQuoteId === ride._id}
+                            style={{ flex: 1 }}
+                          >
+                            {respondingToQuoteId === ride._id ? 'Rejecting...' : '❌ Reject'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // For cash payment, show simple accept/reject buttons
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button
+                          type="button"
+                          className="button button-primary button-small"
+                          onClick={() => handleAcceptQuote(ride._id)}
+                          disabled={respondingToQuoteId === ride._id}
+                          style={{ flex: 1, background: '#10b981' }}
+                        >
+                          {respondingToQuoteId === ride._id ? 'Accepting...' : '✅ Accept Quote'}
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-secondary button-small"
+                          onClick={() => handleRejectQuote(ride._id)}
+                          disabled={respondingToQuoteId === ride._id}
+                          style={{ flex: 1 }}
+                        >
+                          {respondingToQuoteId === ride._id ? 'Rejecting...' : '❌ Reject'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
                 
