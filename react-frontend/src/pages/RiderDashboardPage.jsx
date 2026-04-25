@@ -9,6 +9,7 @@ import { readStoredUser } from '../lib/auth';
 
 const baseTabs = [
   { id: 'overview', label: 'Overview', icon: '📊' },
+  { id: 'current-ride', label: 'Current Ride', icon: '🚗' },
   { id: 'book', label: 'Book a Ride', icon: '🎫' },
   { id: 'bookings', label: 'My Bookings', icon: '📋' },
   { id: 'history', label: 'Ride History', icon: '📜' },
@@ -53,14 +54,8 @@ export default function RiderDashboardPage() {
   });
   const [cardPaymentError, setCardPaymentError] = useState('');
 
-  // Dynamically add Current Ride tab when there's an active ride
-  const tabs = activeRide && ['accepted', 'ongoing'].includes(rideStatus)
-    ? [
-        { id: 'overview', label: 'Overview', icon: '📊' },
-        { id: 'current-ride', label: 'Current Ride', icon: '🚗' },
-        ...baseTabs.slice(1)
-      ]
-    : baseTabs;
+  // Use baseTabs directly - Current Ride is now always visible
+  const tabs = baseTabs;
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [driversError, setDriversError] = useState('');
   const [favoriteDriverIds, setFavoriteDriverIds] = useState([]);
@@ -126,8 +121,8 @@ export default function RiderDashboardPage() {
           setActiveRide(activeRideData);
           setRideStatus(activeRideData.status);
           
-          // Auto-switch to current ride tab if a ride was just accepted or completed
-          if ((activeRideData.status === 'accepted' || activeRideData.status === 'completed') && !activeRide) {
+          // Auto-switch to current ride tab only if a ride was just accepted (not for completed)
+          if (activeRideData.status === 'accepted' && !activeRide) {
             setActiveTab('current-ride');
           }
         } else if (activeRide && activeRide.status === 'cancelled') {
