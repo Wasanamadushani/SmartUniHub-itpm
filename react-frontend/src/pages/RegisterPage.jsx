@@ -128,18 +128,18 @@ export default function RegisterPage() {
       <PageHeader
         eyebrow="Create Account"
         title="Join SLIIT Transport"
-        subtitle="Create your free account and start sharing rides today."
+        subtitle="Create your account to book rides and access campus services."
       />
 
       <section className="section-block">
         <div className="container auth-grid">
           <div className="surface info-panel">
             <h2>How the platform works</h2>
-            <p>Register as a rider, or choose driver if you want to offer rides to fellow students.</p>
+            <p>Register to access campus transport services and book rides with fellow students.</p>
             <ul className="feature-list">
               <li>Verified student accounts.</li>
-              <li>Shared trip cost and messaging.</li>
-              <li>Role-aware dashboards after login.</li>
+              <li>Book rides and access campus services.</li>
+              <li>Apply to become a driver later through your dashboard.</li>
             </ul>
           </div>
 
@@ -205,17 +205,6 @@ export default function RegisterPage() {
                 required
               />
               {touched.phone && errors.phone ? <span className="field-error">{errors.phone}</span> : null}
-            </label>
-
-            <label>
-              Account Type
-              <select
-                value={formState.role}
-                onChange={(event) => setFormState((current) => ({ ...current, role: event.target.value }))}
-              >
-                <option value="rider">Rider</option>
-                <option value="driver">Driver</option>
-              </select>
             </label>
 
             <label>

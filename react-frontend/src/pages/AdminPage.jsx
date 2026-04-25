@@ -38,6 +38,7 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState([]);
   const [allDrivers, setAllDrivers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [userFilter, setUserFilter] = useState('all'); // all, rider, driver, admin, staff
   const [notifications, setNotifications] = useState([]);
   const [studyAreaData, setStudyAreaData] = useState({
     seats: [],
@@ -255,14 +256,22 @@ export default function AdminPage() {
     }
   }, [activeTab]);
 
-  // PDF Download function
+  // PDF Download function - exports only filtered results
   async function downloadUsersPDF() {
     try {
+      // Filter users based on current filter
+      const filteredUsers = allUsers.filter(user => userFilter === 'all' || user.role === userFilter);
+      
+      if (filteredUsers.length === 0) {
+        alert('No users to export with current filter');
+        return;
+      }
+
       // Create a simple CSV format that can be converted to PDF
       let csvContent = 'data:text/csv;charset=utf-8,';
       csvContent += 'Name,Email,Role,Phone,Status,Joined Date\n';
       
-      allUsers.forEach(user => {
+      filteredUsers.forEach(user => {
         const row = [
           user.name || 'N/A',
           user.email || 'N/A',
@@ -278,12 +287,19 @@ export default function AdminPage() {
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `users_report_${new Date().toISOString().split('T')[0]}.csv`);
+      
+      // Include filter in filename
+      const filterLabel = userFilter === 'all' ? 'all_users' : `${userFilter}s`;
+      link.setAttribute('download', `${filterLabel}_report_${new Date().toISOString().split('T')[0]}.csv`);
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Show success notification
+      addNotification(`✅ Exported ${filteredUsers.length} ${userFilter === 'all' ? 'users' : userFilter + 's'} successfully`, 'success');
     } catch (err) {
-      console.error('Error downloading PDF:', err);
+      console.error('Error downloading report:', err);
       alert('Failed to download report');
     }
   }
@@ -897,6 +913,75 @@ export default function AdminPage() {
               </button>
             </div>
 
+            {/* Filter Buttons */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.5rem', 
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={() => setUserFilter('all')}
+                className="button button-small"
+                style={{
+                  background: userFilter === 'all' ? 'var(--primary)' : 'transparent',
+                  color: userFilter === 'all' ? 'white' : 'var(--text)',
+                  border: userFilter === 'all' ? 'none' : '1px solid var(--border)',
+                  padding: '0.5rem 1rem'
+                }}
+              >
+                All ({allUsers.length})
+              </button>
+              <button
+                onClick={() => setUserFilter('rider')}
+                className="button button-small"
+                style={{
+                  background: userFilter === 'rider' ? 'var(--primary)' : 'transparent',
+                  color: userFilter === 'rider' ? 'white' : 'var(--text)',
+                  border: userFilter === 'rider' ? 'none' : '1px solid var(--border)',
+                  padding: '0.5rem 1rem'
+                }}
+              >
+                Riders ({allUsers.filter(u => u.role === 'rider').length})
+              </button>
+              <button
+                onClick={() => setUserFilter('driver')}
+                className="button button-small"
+                style={{
+                  background: userFilter === 'driver' ? 'var(--primary)' : 'transparent',
+                  color: userFilter === 'driver' ? 'white' : 'var(--text)',
+                  border: userFilter === 'driver' ? 'none' : '1px solid var(--border)',
+                  padding: '0.5rem 1rem'
+                }}
+              >
+                Drivers ({allUsers.filter(u => u.role === 'driver').length})
+              </button>
+              <button
+                onClick={() => setUserFilter('admin')}
+                className="button button-small"
+                style={{
+                  background: userFilter === 'admin' ? 'var(--primary)' : 'transparent',
+                  color: userFilter === 'admin' ? 'white' : 'var(--text)',
+                  border: userFilter === 'admin' ? 'none' : '1px solid var(--border)',
+                  padding: '0.5rem 1rem'
+                }}
+              >
+                Admins ({allUsers.filter(u => u.role === 'admin').length})
+              </button>
+              <button
+                onClick={() => setUserFilter('staff')}
+                className="button button-small"
+                style={{
+                  background: userFilter === 'staff' ? 'var(--primary)' : 'transparent',
+                  color: userFilter === 'staff' ? 'white' : 'var(--text)',
+                  border: userFilter === 'staff' ? 'none' : '1px solid var(--border)',
+                  padding: '0.5rem 1rem'
+                }}
+              >
+                Staff ({allUsers.filter(u => u.role === 'staff').length})
+              </button>
+            </div>
+
             {transportLoading ? (
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Loading users...</p>
             ) : allUsers.length === 0 ? (
@@ -921,7 +1006,10 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsers.slice(0, 20).map((user, idx) => (
+                    {allUsers
+                      .filter(user => userFilter === 'all' || user.role === userFilter)
+                      .slice(0, 20)
+                      .map((user, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '1rem' }}>
                           <strong>{user.name || 'N/A'}</strong>
@@ -931,8 +1019,14 @@ export default function AdminPage() {
                         </td>
                         <td style={{ padding: '1rem' }}>
                           <span className="pill" style={{
-                            background: user.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                            color: user.role === 'admin' ? '#ef4444' : '#3b82f6'
+                            background: user.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 
+                                       user.role === 'driver' ? 'rgba(16, 185, 129, 0.1)' :
+                                       user.role === 'staff' ? 'rgba(245, 158, 11, 0.1)' :
+                                       'rgba(59, 130, 246, 0.1)',
+                            color: user.role === 'admin' ? '#ef4444' : 
+                                  user.role === 'driver' ? '#10b981' :
+                                  user.role === 'staff' ? '#f59e0b' :
+                                  '#3b82f6'
                           }}>
                             {user.role || 'user'}
                           </span>
@@ -963,11 +1057,83 @@ export default function AdminPage() {
 
           {/* Driver Management */}
           <div className="surface dashboard-panel">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: '2rem' }}>🚗</span>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.3rem' }}>Driver Management</h2>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Approve, suspend, or manage drivers</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '2rem' }}>🚗</span>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.3rem' }}>Driver Management</h2>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Approve students to become drivers</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  className="button button-secondary button-small"
+                  onClick={async () => {
+                    const allDriversResponse = await apiRequest('/api/drivers');
+                    setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                    addNotification('🔄 Driver list refreshed', 'success');
+                  }}
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+            </div>
+
+            {/* Driver Stats */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1))',
+                border: '2px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b' }}>
+                  {allDrivers.filter(d => d.isApproved === null || d.isApproved === undefined).length}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Pending</div>
+              </div>
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))',
+                border: '2px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#10b981' }}>
+                  {allDrivers.filter(d => d.isApproved === true).length}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Approved</div>
+              </div>
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
+                border: '2px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#ef4444' }}>
+                  {allDrivers.filter(d => d.isApproved === false).length}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Rejected</div>
+              </div>
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
+                border: '2px solid rgba(102, 126, 234, 0.3)',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#667eea' }}>
+                  {allDrivers.length}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total</div>
               </div>
             </div>
 
@@ -975,82 +1141,160 @@ export default function AdminPage() {
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Loading drivers...</p>
             ) : allDrivers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                <p>No drivers found</p>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚗</div>
+                <p>No driver applications yet</p>
               </div>
             ) : (
-              <div className="card-stack">
-                {allDrivers.slice(0, 10).map((driver) => (
-                  <div key={driver._id} className="surface nested-card" style={{
-                    padding: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '1rem',
-                    flexWrap: 'wrap'
-                  }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '0.25rem' }}>
-                        {driver.user?.name || 'Driver'}
-                      </strong>
-                      <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        📧 {driver.user?.email || 'N/A'} • 📞 {driver.user?.phone || 'N/A'}
-                      </p>
-                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        🚗 {driver.vehicleModel || 'N/A'} • {driver.vehicleNumber || 'N/A'} • ⭐ {Number(driver.rating || 0).toFixed(1)}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span className="pill" style={{
-                        background: driver.isApproved ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: driver.isApproved ? '#10b981' : '#ef4444'
-                      }}>
-                        {driver.isApproved ? '✅ Approved' : '⏳ Pending'}
-                      </span>
-                      {!driver.isApproved ? (
-                        <button 
-                          type="button" 
-                          className="button button-primary button-small"
-                          onClick={async () => {
-                            try {
-                              await apiRequest(`/api/drivers/${driver._id}/approve`, {
-                                method: 'PATCH'
-                              });
-                              addNotification(`✅ Driver ${driver.user?.name || 'driver'} approved successfully`, 'success');
-                              // Refresh drivers
-                              const allDriversResponse = await apiRequest('/api/drivers');
-                              setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
-                            } catch (err) {
-                              addNotification(`❌ Error approving driver: ${err.message}`, 'warning');
-                            }
-                          }}
-                        >
-                          Approve
-                        </button>
-                      ) : (
-                        <button 
-                          type="button" 
-                          className="button button-secondary button-small"
-                          onClick={async () => {
-                            if (!window.confirm('Are you sure you want to suspend this driver?')) return;
-                            try {
-                              await apiRequest(`/api/drivers/${driver._id}/reject`, {
-                                method: 'PATCH'
-                              });
-                              addNotification(`⚠️ Driver ${driver.user?.name || 'driver'} suspended`, 'info');
-                              // Refresh drivers
-                              const allDriversResponse = await apiRequest('/api/drivers');
-                              setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
-                            } catch (err) {
-                              addNotification(`❌ Error suspending driver: ${err.message}`, 'warning');
-                            }
-                          }}
-                        >
-                          Suspend
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.95rem'
+                }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                      <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Driver Info</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Contact</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Vehicle</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>License</th>
+                      <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Status</th>
+                      <th style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allDrivers.map((driver) => (
+                      <tr key={driver._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '1rem' }}>
+                          <div>
+                            <strong style={{ display: 'block', marginBottom: '0.25rem' }}>
+                              {driver.user?.name || 'N/A'}
+                            </strong>
+                            <small style={{ color: 'var(--text-secondary)' }}>
+                              {driver.user?.studentId || 'N/A'}
+                            </small>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontSize: '0.9rem' }}>
+                            <div>{driver.user?.email || 'N/A'}</div>
+                            <div style={{ color: 'var(--text-secondary)' }}>
+                              {driver.user?.phone || 'N/A'}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontSize: '0.9rem' }}>
+                            <div><strong>{driver.vehicleType || 'N/A'}</strong></div>
+                            <div>{driver.vehicleModel || 'N/A'}</div>
+                            <div style={{ color: 'var(--text-secondary)' }}>
+                              {driver.vehicleNumber || 'N/A'}
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)' }}>
+                              Capacity: {driver.capacity || 'N/A'}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontSize: '0.9rem' }}>
+                            {driver.licenseNumber || 'N/A'}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          {driver.isApproved === true ? (
+                            <span className="pill success">✓ Approved</span>
+                          ) : driver.isApproved === false ? (
+                            <span className="pill error">✗ Rejected</span>
+                          ) : (
+                            <span className="pill warning">⏳ Pending</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {(driver.isApproved === null || driver.isApproved === undefined || driver.isApproved === false) && (
+                              <button 
+                                type="button" 
+                                className="button button-small"
+                                style={{
+                                  background: '#10b981',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '0.5rem 1rem',
+                                  fontSize: '0.85rem'
+                                }}
+                                onClick={async () => {
+                                  if (!window.confirm(`Approve ${driver.user?.name || 'this driver'} to become a driver?`)) return;
+                                  try {
+                                    await apiRequest(`/api/drivers/${driver._id}/approve`, {
+                                      method: 'PATCH'
+                                    });
+                                    addNotification(`✅ ${driver.user?.name || 'Driver'} approved successfully!`, 'success');
+                                    const allDriversResponse = await apiRequest('/api/drivers');
+                                    setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                                  } catch (err) {
+                                    addNotification(`❌ Error: ${err.message}`, 'warning');
+                                  }
+                                }}
+                              >
+                                ✓ Approve
+                              </button>
+                            )}
+                            {(driver.isApproved === null || driver.isApproved === undefined || driver.isApproved === true) && (
+                              <button 
+                                type="button" 
+                                className="button button-small button-secondary"
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  fontSize: '0.85rem'
+                                }}
+                                onClick={async () => {
+                                  if (!window.confirm(`Reject ${driver.user?.name || 'this driver'}'s application?`)) return;
+                                  try {
+                                    await apiRequest(`/api/drivers/${driver._id}/reject`, {
+                                      method: 'PATCH'
+                                    });
+                                    addNotification(`⚠️ ${driver.user?.name || 'Driver'} application rejected`, 'info');
+                                    const allDriversResponse = await apiRequest('/api/drivers');
+                                    setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                                  } catch (err) {
+                                    addNotification(`❌ Error: ${err.message}`, 'warning');
+                                  }
+                                }}
+                              >
+                                ✗ Reject
+                              </button>
+                            )}
+                            <button 
+                              type="button" 
+                              className="button button-small"
+                              style={{
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.85rem'
+                              }}
+                              onClick={async () => {
+                                if (!window.confirm(`Delete ${driver.user?.name || 'this driver'}? This cannot be undone.`)) return;
+                                try {
+                                  await apiRequest(`/api/drivers/${driver._id}`, {
+                                    method: 'DELETE'
+                                  });
+                                  addNotification(`🗑️ ${driver.user?.name || 'Driver'} deleted successfully`, 'success');
+                                  const allDriversResponse = await apiRequest('/api/drivers');
+                                  setAllDrivers(Array.isArray(allDriversResponse) ? allDriversResponse : []);
+                                } catch (err) {
+                                  addNotification(`❌ Error: ${err.message}`, 'warning');
+                                }
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

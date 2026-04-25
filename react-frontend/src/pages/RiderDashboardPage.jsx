@@ -41,6 +41,8 @@ export default function RiderDashboardPage() {
   const [bookingMessage, setBookingMessage] = useState('');
   const [drivers, setDrivers] = useState([]);
   const [respondingToQuoteId, setRespondingToQuoteId] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationItems, setNotificationItems] = useState([]);
 
   // Dynamically add Current Ride tab when there's an active ride
   const tabs = activeRide && ['accepted', 'ongoing'].includes(rideStatus)
@@ -55,6 +57,37 @@ export default function RiderDashboardPage() {
   const [favoriteDriverIds, setFavoriteDriverIds] = useState([]);
   const currentUserId = currentUser?._id || currentUser?.id || '';
   const favoriteStorageKey = currentUserId ? `favoriteDrivers:${currentUserId}` : 'favoriteDrivers:guest';
+
+  // Calculate unread notifications
+  const unreadNotifications = notificationItems.length;
+
+  // Update notifications based on ride status and bookings
+  useEffect(() => {
+    const nextNotifications = [];
+
+    // Check for active rides
+    if (activeRide && ['accepted', 'ongoing'].includes(rideStatus)) {
+      if (rideStatus === 'accepted') {
+        nextNotifications.push('Your driver is on the way to pick you up.');
+      } else if (rideStatus === 'ongoing') {
+        nextNotifications.push('Ride is in progress. Live tracking is enabled.');
+      }
+    }
+
+    // Check for pending bookings
+    const pendingBookings = riderRides.filter(ride => ride.status === 'pending');
+    if (pendingBookings.length > 0) {
+      nextNotifications.push(`You have ${pendingBookings.length} pending ride request(s).`);
+    }
+
+    // Check for quoted rides
+    const quotedRides = riderRides.filter(ride => ride.status === 'quoted');
+    if (quotedRides.length > 0) {
+      nextNotifications.push(`You have ${quotedRides.length} price quote(s) waiting for your response.`);
+    }
+
+    setNotificationItems(nextNotifications);
+  }, [activeRide, rideStatus, riderRides]);
 
   useEffect(() => {
     const handleAuthChange = () => setCurrentUser(readStoredUser());
@@ -1693,8 +1726,82 @@ export default function RiderDashboardPage() {
           <aside className="surface dashboard-sidebar">
             <div className="sidebar-profile">
               <div className="avatar-badge">👨‍🎓</div>
-              <h3>Rider Name</h3>
-              <p>SLIIT Student</p>
+              <h3>{currentUser?.name || 'Rider Name'}</h3>
+              <p>{currentUser?.role === 'Driver' ? 'Driver & Rider' : 'SLIIT Student'}</p>
+              <div style={{ position: 'relative', marginTop: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="button button-secondary button-small"
+                  onClick={() => setShowNotifications((current) => !current)}
+                  aria-label="Rider notifications"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.75rem'
+                  }}
+                >
+                  🔔 Notifications
+                  {unreadNotifications > 0 ? (
+                    <span
+                      style={{
+                        minWidth: '20px',
+                        height: '20px',
+                        borderRadius: '999px',
+                        background: '#ef4444',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0 0.35rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      {unreadNotifications}
+                    </span>
+                  ) : null}
+                </button>
+
+                {showNotifications ? (
+                  <div
+                    className="surface"
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 0.5rem)',
+                      right: 0,
+                      width: '280px',
+                      maxHeight: '240px',
+                      overflowY: 'auto',
+                      zIndex: 20,
+                      padding: '0.75rem'
+                    }}
+                  >
+                    <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Notifications</strong>
+                    {notificationItems.length === 0 ? (
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No new notifications.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {notificationItems.map((notification, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              fontSize: '0.85rem',
+                              color: 'var(--text-secondary)',
+                              padding: '0.5rem',
+                              background: 'var(--bg)',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border)'
+                            }}
+                          >
+                            {notification}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
             <nav className="sidebar-nav">
               {tabs.map((tab) => (

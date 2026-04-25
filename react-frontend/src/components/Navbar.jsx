@@ -32,8 +32,11 @@ export default function Navbar() {
       { to: '/study-area', label: 'Study Area' }
     ];
 
-    if (currentUser?.role === 'driver' || currentUser?.role === 'admin') {
-      baseLinks.push({ to: '/rider-dashboard', label: 'Find Ride' });
+    // Add Transport link - route based on user role
+    if (currentUser?.role === 'driver') {
+      baseLinks.push({ to: '/driver-dashboard', label: 'Transport' });
+    } else {
+      baseLinks.push({ to: '/rider-dashboard', label: 'Transport' });
     }
 
     return baseLinks;

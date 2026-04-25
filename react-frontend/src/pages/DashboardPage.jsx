@@ -157,6 +157,64 @@ export default function DashboardPage() {
                 Navigate through all campus services seamlessly. From events to transport, 
                 canteen to study areas - everything you need is just a click away.
               </p>
+              
+              {/* Quick Action Buttons */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '1rem', 
+                marginTop: '1.5rem',
+                flexWrap: 'wrap'
+              }}>
+                {user.role === 'driver' ? (
+                  <button
+                    onClick={() => navigate('/driver-dashboard')}
+                    className="button button-primary"
+                    style={{
+                      background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                      border: 'none',
+                      padding: '0.9rem 2rem',
+                      fontSize: '1rem',
+                      fontWeight: '700',
+                      boxShadow: '0 4px 15px rgba(67, 233, 123, 0.4)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(67, 233, 123, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(67, 233, 123, 0.4)';
+                    }}
+                  >
+                    🚘 Driver Dashboard
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/rider-dashboard')}
+                    className="button button-primary"
+                    style={{
+                      background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                      border: 'none',
+                      padding: '0.9rem 2rem',
+                      fontSize: '1rem',
+                      fontWeight: '700',
+                      boxShadow: '0 4px 15px rgba(67, 233, 123, 0.4)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(67, 233, 123, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(67, 233, 123, 0.4)';
+                    }}
+                  >
+                    🚗 Find a Ride
+                  </button>
+                )}
+              </div>
             </div>
             <div className="canteenx-hero-cards" style={{ gap: '1rem' }}>
               <div style={{
