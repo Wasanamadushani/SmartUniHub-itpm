@@ -46,7 +46,7 @@ export default function EventsCalendarPage() {
       setIsLoading(true);
       setError('');
       try {
-        const data = await apiRequest('/events');
+        const data = await apiRequest('/api/events');
         setEvents(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || 'Failed to load events');

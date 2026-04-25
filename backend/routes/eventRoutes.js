@@ -180,6 +180,40 @@ router.get('/bookings/:bookingId', async (req, res) => {
   }
 });
 
+// Get tickets for a booking (for download)
+router.get('/bookings/:bookingId/tickets', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ message: 'Invalid booking id' });
+    }
+
+    const booking = await EventBooking.findById(bookingId)
+      .populate('event', 'title location startDate endDate')
+      .lean();
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Return tickets array if it exists, otherwise return empty array
+    const tickets = booking.tickets || [];
+    
+    res.json({
+      bookingId: booking._id,
+      tickets,
+      event: booking.event,
+      userName: booking.userName,
+      bookingCount: booking.bookingCount,
+      paymentStatus: booking.paymentStatus
+    });
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ message: 'Unable to fetch tickets' });
+  }
+});
+
 // Upload payment receipt for an event booking
 router.post('/bookings/:bookingId/receipt', async (req, res) => {
   try {

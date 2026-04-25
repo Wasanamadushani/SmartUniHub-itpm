@@ -237,7 +237,21 @@ router.patch('/event-bookings/:id/payment-status', async (req, res) => {
     };
 
     if (paymentStatus === 'approved') {
-      update.ticketCode = generateTicketCode();
+      // Generate individual tickets for each seat
+      const tickets = [];
+      const bookingCount = existingBooking.bookingCount || 1;
+      
+      for (let i = 1; i <= bookingCount; i++) {
+        tickets.push({
+          ticketNumber: `${generateTicketCode()}-${i}`,
+          seatNumber: i,
+          qrCode: `QR-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9).toUpperCase()}`,
+          issuedAt: new Date()
+        });
+      }
+      
+      update.tickets = tickets;
+      update.ticketCode = generateTicketCode(); // Keep for backward compatibility
       update.ticketIssuedAt = new Date();
     }
 
