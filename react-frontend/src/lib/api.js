@@ -1,11 +1,17 @@
-const configuredApiBaseUrl =
-  import.meta.env.VITE_NODE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:5001/api';
+// In development, use relative path so Vite proxy works
+// In production, use full URL from env vars
+const isDevelopment = import.meta.env.DEV;
+
+const configuredApiBaseUrl = isDevelopment
+  ? '' // Use relative path in dev (Vite proxy will handle it)
+  : (import.meta.env.VITE_NODE_API_URL ||
+     import.meta.env.VITE_API_BASE_URL ||
+     'http://localhost:5001/api');
 
 const API_BASE_URL = configuredApiBaseUrl.replace(/\/$/, '');
 
 console.log('API_BASE_URL:', API_BASE_URL);
+console.log('isDevelopment:', isDevelopment);
 
 export async function apiRequest(path, options = {}) {
   const fullUrl = `${API_BASE_URL}${path}`;

@@ -73,7 +73,7 @@ export default function BookEventPage() {
         setError('');
         setSuccess('');
 
-        const data = await apiRequest('/events?status=approved');
+        const data = await apiRequest('/api/events?status=approved');
         const approvedIndoorEvents = Array.isArray(data)
           ? data.filter((event) => event.status === 'approved' && event.eventType === 'indoor')
           : [];
@@ -113,7 +113,9 @@ export default function BookEventPage() {
       }
 
       try {
+        console.log('Loading booking summary for event:', selectedEventId);
         const response = await getEventBookingSummary(selectedEventId, userId);
+        console.log('Booking summary response:', response);
         setSummary(response);
 
         if (response.remainingSeats <= 0) {
@@ -127,6 +129,7 @@ export default function BookEventPage() {
           setBookingCount(String(Math.min(Math.max(1, currentCount || 1), maxSelectableSeats)));
         }
       } catch (requestError) {
+        console.error('Error loading booking summary:', requestError);
         setError(requestError.message || 'Unable to load booking summary.');
       }
     }

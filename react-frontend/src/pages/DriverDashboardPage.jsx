@@ -89,7 +89,7 @@ export default function DriverDashboardPage() {
     }
 
     try {
-      const profile = await apiRequest(`/drivers/user/${currentUserId}`);
+      const profile = await apiRequest(`/api/drivers/user/${currentUserId}`);
       setDriverProfile(profile);
       return profile?._id || '';
     } catch (_error) {
@@ -106,7 +106,7 @@ export default function DriverDashboardPage() {
     setRequestError('');
 
     try {
-      const updatedRide = await apiRequest(`/rides/${activeRide._id}/start`, {
+      const updatedRide = await apiRequest(`/api/rides/${activeRide._id}/start`, {
         method: 'PATCH'
       });
       setActiveRide(updatedRide);
@@ -130,7 +130,7 @@ export default function DriverDashboardPage() {
 
     try {
       const isAvailable = Boolean(driverProfile?.isAvailable);
-      const updatedDriver = await apiRequest(`/drivers/${driverId}/availability`, {
+      const updatedDriver = await apiRequest(`/api/drivers/${driverId}/availability`, {
         method: 'PATCH',
         body: JSON.stringify({ isAvailable: !isAvailable })
       });
@@ -164,7 +164,7 @@ export default function DriverDashboardPage() {
     setAccountActionLoading('delete');
 
     try {
-      await apiRequest(`/drivers/${driverId}`, { method: 'DELETE' });
+      await apiRequest(`/api/drivers/${driverId}`, { method: 'DELETE' });
       clearAuthenticatedUser();
       navigate('/login');
     } catch (error) {
@@ -182,7 +182,7 @@ export default function DriverDashboardPage() {
     setRequestError('');
 
     try {
-      const updatedRide = await apiRequest(`/rides/${activeRide._id}/complete`, {
+      const updatedRide = await apiRequest(`/api/rides/${activeRide._id}/complete`, {
         method: 'PATCH',
         body: JSON.stringify({ distance: 0, duration: 0 })
       });
@@ -238,7 +238,7 @@ export default function DriverDashboardPage() {
       }
 
       try {
-        const profile = await apiRequest(`/drivers/user/${currentUserId}`);
+        const profile = await apiRequest(`/api/drivers/user/${currentUserId}`);
         setDriverProfile(profile);
       } catch (_error) {
         setDriverProfile(null);
@@ -253,7 +253,7 @@ export default function DriverDashboardPage() {
     setRequestError('');
 
     try {
-      const rides = await apiRequest('/rides/pending');
+      const rides = await apiRequest('/api/rides/pending');
       const ridesArray = Array.isArray(rides) ? rides : [];
       
       // Only show rides if driver is approved
@@ -303,7 +303,7 @@ export default function DriverDashboardPage() {
     setRequestError('');
 
     try {
-      const rides = await apiRequest(`/rides/driver/${driverProfile._id}`);
+      const rides = await apiRequest(`/api/rides/driver/${driverProfile._id}`);
       const normalized = Array.isArray(rides) ? rides : [];
       const latestActiveRide = normalized.find((ride) => ride?.status === 'ongoing')
         || normalized.find((ride) => ride?.status === 'accepted');
@@ -336,7 +336,7 @@ export default function DriverDashboardPage() {
     setHistoryError('');
 
     try {
-      const rides = await apiRequest(`/rides/driver/${driverProfile._id}`);
+      const rides = await apiRequest(`/api/rides/driver/${driverProfile._id}`);
       const normalized = Array.isArray(rides) ? rides : [];
       const historicalRides = normalized.filter((ride) =>
         ride?.status === 'completed' || ride?.status === 'cancelled'
@@ -371,7 +371,7 @@ export default function DriverDashboardPage() {
     setAcceptingRideId(rideId);
 
     try {
-      const acceptedRide = await apiRequest(`/rides/${rideId}/accept`, {
+      const acceptedRide = await apiRequest(`/api/rides/${rideId}/accept`, {
         method: 'PATCH',
         body: JSON.stringify({
           driverId
@@ -408,7 +408,7 @@ export default function DriverDashboardPage() {
     setSendingQuoteId(rideId);
 
     try {
-      await apiRequest(`/rides/${rideId}/send-quote`, {
+      await apiRequest(`/api/rides/${rideId}/send-quote`, {
         method: 'PATCH',
         body: JSON.stringify({
           driverId,

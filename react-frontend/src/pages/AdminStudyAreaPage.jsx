@@ -17,7 +17,7 @@ export default function AdminStudyAreaPage() {
 
   async function fetchPendingArrivals() {
     try {
-      const results = await apiRequest('/bookings/pending-arrivals');
+      const results = await apiRequest('/api/bookings/pending-arrivals');
       setPendingArrivals(results);
     } catch (err) {
       console.error('Failed to fetch pending arrivals:', err);
@@ -26,7 +26,7 @@ export default function AdminStudyAreaPage() {
 
   async function fetchUnpaidFines() {
     try {
-      const results = await apiRequest('/fines/unpaid');
+      const results = await apiRequest('/api/fines/unpaid');
       setUnpaidFines(results);
     } catch (err) {
       console.error('Failed to fetch unpaid fines:', err);
@@ -37,7 +37,7 @@ export default function AdminStudyAreaPage() {
     setLoading(true);
     try {
       const adminId = user._id || user.id;
-      await apiRequest(`/bookings/admin-confirm/${bookingId}`, {
+      await apiRequest(`/api/bookings/admin-confirm/${bookingId}`, {
         method: 'PUT',
         body: JSON.stringify({ admin_id: adminId }),
       });
@@ -53,7 +53,7 @@ export default function AdminStudyAreaPage() {
     setLoading(true);
     try {
       const adminId = user._id || user.id;
-      await apiRequest(`/bookings/admin-no-show/${bookingId}`, {
+      await apiRequest(`/api/bookings/admin-no-show/${bookingId}`, {
         method: 'PUT',
         body: JSON.stringify({ admin_id: adminId, fine_amount: 100 }),
       });
@@ -68,7 +68,7 @@ export default function AdminStudyAreaPage() {
   async function handleConfirmPayment(fineId) {
     setLoading(true);
     try {
-      await apiRequest(`/fines/pay/${fineId}`, {
+      await apiRequest(`/api/fines/pay/${fineId}`, {
         method: 'PUT',
       });
       await fetchUnpaidFines();

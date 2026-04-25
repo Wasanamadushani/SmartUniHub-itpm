@@ -32,26 +32,57 @@ async function seedEvents() {
     const existingEvents = await Event.find({});
     let event;
     if (existingEvents.length === 0) {
+      // Create a bookable indoor event (approved, with seats and price)
       event = await Event.create({
         title: 'SLIIT Got Talent 2024',
-        description: 'Annual talent show of SLIIT',
+        description: 'Annual talent show of SLIIT - Book your seats now!',
         location: 'Main Auditorium',
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000),
-        status: 'pending',
-        category: 'entertainment'
+        startDate: new Date(Date.now() + 86400000 * 7), // 7 days from now
+        endDate: new Date(Date.now() + 86400000 * 8), // 8 days from now
+        eventType: 'indoor',
+        totalSeats: 100,
+        ticketPrice: 500,
+        status: 'approved'
       });
       
+      // Create another bookable indoor event
       await Event.create({
-        title: 'Career Fair 2024',
-        description: 'Meet your future employers',
-        location: 'Ground Floor Lobby',
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000),
-        status: 'approved',
-        category: 'educational'
+        title: 'Tech Conference 2024',
+        description: 'Latest trends in technology and innovation',
+        location: 'Conference Hall A',
+        startDate: new Date(Date.now() + 86400000 * 14), // 14 days from now
+        endDate: new Date(Date.now() + 86400000 * 15), // 15 days from now
+        eventType: 'indoor',
+        totalSeats: 150,
+        ticketPrice: 750,
+        status: 'approved'
       });
-      console.log('Created dummy events');
+
+      // Create an outdoor event (not bookable)
+      await Event.create({
+        title: 'Sports Day 2024',
+        description: 'Annual sports meet - Free entry, no booking required',
+        location: 'Sports Ground',
+        startDate: new Date(Date.now() + 86400000 * 21), // 21 days from now
+        endDate: new Date(Date.now() + 86400000 * 22), // 22 days from now
+        eventType: 'outdoor',
+        status: 'approved'
+      });
+
+      // Create a pending event (not bookable yet)
+      await Event.create({
+        title: 'Music Festival 2024',
+        description: 'Live music performances - Awaiting approval',
+        location: 'Open Air Theater',
+        startDate: new Date(Date.now() + 86400000 * 30), // 30 days from now
+        endDate: new Date(Date.now() + 86400000 * 31), // 31 days from now
+        eventType: 'indoor',
+        totalSeats: 200,
+        ticketPrice: 1000,
+        status: 'pending'
+      });
+
+      console.log('Created dummy events (2 bookable indoor events, 1 outdoor, 1 pending)');
     } else {
       event = existingEvents[0];
     }

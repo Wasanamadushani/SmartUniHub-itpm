@@ -43,7 +43,7 @@ export default function EventStallRequestPage() {
     setIsLoading(true);
     setError('');
     try {
-      const data = await apiRequest('/events');
+      const data = await apiRequest('/api/events');
       const nextEvents = Array.isArray(data) ? data : [];
       setEvents(nextEvents);
       if (nextEvents.length > 0) {

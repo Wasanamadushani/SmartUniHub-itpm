@@ -70,7 +70,7 @@ export default function RiderDashboardPage() {
     async function checkForActiveRide() {
       try {
         // Check if user has any accepted or ongoing rides
-        const response = await apiRequest(`/rides/rider/${currentUserId}`);
+        const response = await apiRequest(`/api/rides/rider/${currentUserId}`);
         const rides = Array.isArray(response) ? response : [];
         
         // Find the first accepted or ongoing ride
@@ -212,7 +212,7 @@ export default function RiderDashboardPage() {
     setRidesError('');
 
     try {
-      const rides = await apiRequest(`/rides/rider/${currentUserId}`);
+      const rides = await apiRequest(`/api/rides/rider/${currentUserId}`);
       setRiderRides(Array.isArray(rides) ? rides : []);
     } catch (error) {
       setRidesError(error.message || 'Unable to load rides right now.');
@@ -235,7 +235,7 @@ export default function RiderDashboardPage() {
     setDriversError('');
 
     try {
-      const driverList = await apiRequest('/drivers?isApproved=true');
+      const driverList = await apiRequest('/api/drivers?isApproved=true');
       setDrivers(Array.isArray(driverList) ? driverList : []);
     } catch (error) {
       setDriversError(error.message || 'Unable to load drivers right now.');
@@ -283,7 +283,7 @@ export default function RiderDashboardPage() {
     setBookingMessage('');
 
     try {
-      await apiRequest('/rides', {
+      await apiRequest('/api/rides', {
         method: 'POST',
         body: JSON.stringify({
           riderId: currentUserId,
@@ -312,7 +312,7 @@ export default function RiderDashboardPage() {
     setRidesError('');
 
     try {
-      await apiRequest(`/rides/${rideId}/accept-quote`, {
+      await apiRequest(`/api/rides/${rideId}/accept-quote`, {
         method: 'PATCH'
       });
 
@@ -334,7 +334,7 @@ export default function RiderDashboardPage() {
     setRidesError('');
 
     try {
-      await apiRequest(`/rides/${rideId}/reject-quote`, {
+      await apiRequest(`/api/rides/${rideId}/reject-quote`, {
         method: 'PATCH'
       });
 

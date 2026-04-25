@@ -27,7 +27,7 @@ export default function StudyAreaPage() {
     setError('');
     try {
       const results = await apiRequest(
-        `/bookings/seats?date=${encodeURIComponent(date)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
+        `/api/bookings/seats?date=${encodeURIComponent(date)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
       );
       setSeats(results);
     } catch (err) {
@@ -43,7 +43,7 @@ export default function StudyAreaPage() {
 
     try {
       const userId = user._id || user.id;
-      const booking = await apiRequest(`/bookings/active/${userId}`);
+      const booking = await apiRequest(`/api/bookings/active/${userId}`);
       setActiveBooking(booking);
     } catch (err) {
       console.error(err);
@@ -58,7 +58,7 @@ export default function StudyAreaPage() {
 
     try {
       const userId = user._id || user.id;
-      const fines = await apiRequest(`/fines/user/${userId}`);
+      const fines = await apiRequest(`/api/fines/user/${userId}`);
       const unpaid = fines.filter((fine) => fine.status === 'unpaid');
       setUnpaidFines(unpaid);
     } catch (err) {
@@ -92,7 +92,7 @@ export default function StudyAreaPage() {
 
     try {
       const userId = user._id || user.id;
-      await apiRequest('/bookings', {
+      await apiRequest('/api/bookings', {
         method: 'POST',
         body: JSON.stringify({
           userId,
@@ -114,7 +114,7 @@ export default function StudyAreaPage() {
   async function handleCompleteBooking() {
     if (!activeBooking) return;
     try {
-      await apiRequest(`/bookings/complete/${activeBooking._id || activeBooking.id}`, {
+      await apiRequest(`/api/bookings/complete/${activeBooking._id || activeBooking.id}`, {
         method: 'PUT',
       });
       setActiveBooking(null);
@@ -127,7 +127,7 @@ export default function StudyAreaPage() {
   async function handleCancelBooking() {
     if (!activeBooking) return;
     try {
-      await apiRequest(`/bookings/cancel/${activeBooking._id || activeBooking.id}`, {
+      await apiRequest(`/api/bookings/cancel/${activeBooking._id || activeBooking.id}`, {
         method: 'PUT',
       });
       setActiveBooking(null);
@@ -141,7 +141,7 @@ export default function StudyAreaPage() {
     if (!activeBooking) return;
     setArrived(true);
     try {
-      await apiRequest(`/bookings/arrive/${activeBooking._id || activeBooking.id}`, {
+      await apiRequest(`/api/bookings/arrive/${activeBooking._id || activeBooking.id}`, {
         method: 'PUT',
       });
       fetchActiveBooking();
