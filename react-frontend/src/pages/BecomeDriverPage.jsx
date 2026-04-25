@@ -77,7 +77,7 @@ export default function BecomeDriverPage() {
     setSuccessMessage('');
 
     try {
-      await apiRequest('/drivers', {
+      await apiRequest('/api/drivers', {
         method: 'POST',
         body: JSON.stringify({
           userId: user._id,

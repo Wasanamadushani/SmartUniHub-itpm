@@ -19,6 +19,7 @@ const filesToFix = [
   'src/pages/AdminStudyAreaPage.jsx',
   'src/pages/AdminEventsPage.jsx',
   'src/pages/AdminPage.jsx',
+  'src/pages/BecomeDriverPage.jsx',
 ];
 
 console.log('🔧 Fixing API paths in frontend files...\n');
